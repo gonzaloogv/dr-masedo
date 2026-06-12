@@ -1,0 +1,144 @@
+@import url('https://fonts.googleapis.com/css2?family=Alex+Brush&family=Cormorant+Garamond:ital,wght@0,400;0,500;1,400;1,500&family=Poppins:wght@300;400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ============================================
+   Design System — Dr. Masedo
+   All colors HSL. No hardcoded colors in components.
+   ============================================ */
+
+@layer base {
+  :root {
+    /* Brand palette (HSL) — paleta oficial */
+    /* Verdes */
+    --brand-darker: 183 75% 8%;         /* #051F20 */
+    --brand-dark: 172 60% 11%;          /* #0B2B26 */
+    --brand-forest: 168 43% 15%;        /* #163832 */
+    --brand-forest-2: 162 39% 23%;      /* #235347 */
+    --brand-sage: 138 24% 63%;          /* #8EB69B */
+    --brand-mint: 134 49% 90%;          /* #DAF1DE */
+
+    /* Marrones */
+    --brand-copper: 22 28% 51%;         /* #A7795E — Chamoisee */
+    --brand-copper-dark: 22 64% 27%;    /* #6E3C19 — Kobicha */
+    --brand-bean: 19 60% 13%;           /* #34170D — Black bean */
+    --brand-licorice: 16 65% 9%;        /* #230F08 — Licorice */
+    --brand-deepest: 22 81% 4%;         /* #110703 — Smoky black */
+
+    /* Neutrales auxiliares */
+    --brand-cream: 39 33% 97%;          /* fondo claro suave */
+    --brand-cream-border: 36 11% 86%;
+    --brand-gold: 43 78% 60%;           /* estrellas testimonios */
+    --brand-whatsapp: 142 70% 49%;      /* verde marca WhatsApp */
+    --brand-whatsapp-shadow: 142 70% 25%; /* sombra botón WhatsApp */
+
+    /* Semantic tokens */
+    --background: var(--brand-cream);
+    --foreground: var(--brand-darker);
+    --card: 0 0% 100%;
+    --card-foreground: var(--brand-darker);
+    --popover: 0 0% 100%;
+    --popover-foreground: var(--brand-darker);
+    --primary: var(--brand-copper);
+    --primary-foreground: 0 0% 100%;
+    --secondary: var(--brand-forest-2);
+    --secondary-foreground: 0 0% 100%;
+    --muted: 36 14% 92%;
+    --muted-foreground: 0 0% 40%;
+    --accent: var(--brand-sage);
+    --accent-foreground: var(--brand-darker);
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: var(--brand-cream-border);
+    --input: var(--brand-cream-border);
+    --ring: var(--brand-copper);
+    --radius: 0.25rem;
+  }
+}
+
+@layer base {
+  * { @apply border-border; }
+  html { scroll-behavior: smooth; }
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+  }
+}
+
+/* ===== Reusable component classes ===== */
+@layer components {
+  /* Section label: small uppercase tracked label with line */
+  .eyebrow {
+    @apply tracking-[0.3em] uppercase text-xs font-sans text-copper;
+  }
+  .eyebrow-line {
+    @apply w-12 h-px bg-copper;
+  }
+
+  /* Headings */
+  .h-display {
+    font-family: theme('fontFamily.sans');
+    font-size: clamp(2.2rem, 4vw, 3.5rem);
+    font-weight: 600;
+    line-height: 1.2;
+  }
+  .h-display-light {
+    font-family: theme('fontFamily.sans');
+    font-size: clamp(2.2rem, 4vw, 3.5rem);
+    font-weight: 400;
+    line-height: 1.2;
+  }
+  .h-accent {
+    font-family: theme('fontFamily.sans');
+    font-weight: 400;
+    color: hsl(var(--brand-forest-2));
+  }
+  .h-accent-sage {
+    font-family: theme('fontFamily.sans');
+    font-weight: 400;
+    color: hsl(var(--brand-sage));
+  }
+
+  /* Buttons */
+  .btn-primary {
+    @apply inline-block px-10 py-4 bg-copper text-white tracking-[0.15em] text-xs uppercase
+           transition-all duration-300 hover:opacity-90 cursor-pointer;
+    font-family: theme('fontFamily.sans');
+  }
+  .btn-outline {
+    @apply inline-block px-10 py-4 border border-copper text-white tracking-[0.15em] text-xs uppercase
+           transition-all duration-300 hover:bg-copper cursor-pointer;
+    font-family: theme('fontFamily.sans');
+  }
+  .btn-compact {
+    @apply inline-block px-6 py-2.5 bg-copper text-white tracking-[0.12em] text-xs uppercase
+           transition-all duration-300 hover:opacity-90 cursor-pointer;
+    font-family: theme('fontFamily.sans');
+  }
+
+  /* Body copy */
+  .body-text {
+    font-family: theme('fontFamily.sans');
+    font-size: 0.96rem;
+    line-height: 1.9;
+    color: hsl(0 0% 27%);
+  }
+
+  /* Image placeholder block */
+  .img-placeholder {
+    @apply flex items-center justify-center bg-muted text-muted-foreground;
+    background-image:
+      linear-gradient(45deg, hsl(var(--brand-cream-border)) 25%, transparent 25%),
+      linear-gradient(-45deg, hsl(var(--brand-cream-border)) 25%, transparent 25%),
+      linear-gradient(45deg, transparent 75%, hsl(var(--brand-cream-border)) 75%),
+      linear-gradient(-45deg, transparent 75%, hsl(var(--brand-cream-border)) 75%);
+    background-size: 24px 24px;
+    background-position: 0 0, 0 12px, 12px -12px, -12px 0;
+  }
+  .img-placeholder-dark {
+    @apply flex items-center justify-center;
+    background-color: hsl(var(--brand-forest));
+    color: hsl(var(--brand-sage));
+  }
+}
