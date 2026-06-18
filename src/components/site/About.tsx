@@ -1,5 +1,4 @@
 import { openWhatsApp } from "@/lib/site";
-import { ImagePlaceholder } from "@/components/ImagePlaceholder";
 import { Reveal } from "@/components/Reveal";
 
 const FACTS = [
@@ -11,16 +10,18 @@ const FACTS = [
 
 export function About() {
   return (
-    <section id="sobre-mi" className="relative py-20 md:py-28 lg:py-32 overflow-hidden bg-cream">
+    <section
+      id="sobre-mi"
+      aria-labelledby="sobre-mi-title"
+      className="relative py-20 md:py-28 lg:py-32 overflow-hidden bg-cream"
+    >
       <div className="max-w-7xl mx-auto px-6 lg:px-12">
-        {/* Eyebrow */}
         <div className="flex items-center gap-4 mb-4">
           <span className="eyebrow-line" />
-          <span className="eyebrow">Sobre mí</span>
+          <span className="eyebrow text-copper-dark">Sobre mí</span>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-16 items-center">
-          {/* Left: Image placeholder */}
           <Reveal className="relative" x={-24} y={0} delay={0}>
             <div
               className="absolute -top-6 -left-6 w-full h-full hidden lg:block"
@@ -31,13 +32,14 @@ export function About() {
               style={{ height: "clamp(350px, 50vw, 600px)", maxHeight: 600 }}
             >
               <img
-                src="/images/foto_profesional_masedo.jpg"
-                alt="Foto profesional · Dr. Masedo"
+                src="https://res.cloudinary.com/dz9tuwczf/image/upload/v1781272538/consultorio_dante_masedo-37_pmuhop.jpg"
+                alt="Dr. Masedo Carlos Dante, cirujano plástico en Resistencia, Chaco"
+                width={1200}
+                height={1600}
+                decoding="async"
                 className="w-full h-full object-cover"
               />
             </div>
-
-            {/* Badge */}
             <div className="absolute bottom-8 -right-6 z-20 hidden lg:block bg-forest px-5 py-4">
               <p className="font-sans text-[11px] tracking-brand-tight uppercase text-white/70 text-center mb-1">
                 Miembro certificado
@@ -47,11 +49,11 @@ export function About() {
               </p>
             </div>
           </Reveal>
-
-          {/* Right: Text */}
           <Reveal className="relative z-10" x={24} y={0} delay={120}>
-            <h2 className="h-display-light mb-2 text-darker">Una trayectoria</h2>
-            <h2 className="h-display mb-8 text-forest-2">dedicada a la excelencia</h2>
+            <h2 id="sobre-mi-title" className="h-display-light mb-8 text-darker">
+              Cirujano plástico en{" "}
+              <span className="h-display text-forest-2">Resistencia, Chaco</span>
+            </h2>
 
             <p className="body-text mb-6">
               El Dr. Masedo Carlos Dante es médico especialista en Cirugía Plástica Reconstructiva,
@@ -76,7 +78,7 @@ export function About() {
               ))}
             </div>
 
-            <button onClick={openWhatsApp} className="btn-primary">Agendar consulta</button>
+            <button onClick={() => openWhatsApp()} className="btn-primary">Agendar consulta</button>
           </Reveal>
         </div>
       </div>

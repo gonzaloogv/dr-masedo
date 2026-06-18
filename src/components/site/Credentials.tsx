@@ -1,5 +1,4 @@
 import { GraduationCap, Globe } from "lucide-react";
-import { ImagePlaceholder } from "@/components/ImagePlaceholder";
 import { Reveal } from "@/components/Reveal";
 
 const EDUCATION = [
@@ -38,7 +37,7 @@ const MEMBERSHIPS = [
 
 export function Credentials() {
   return (
-    <section id="formacion" className="py-20 md:py-28 lg:py-32 bg-darker">
+    <section id="formacion" aria-labelledby="formacion-title" className="py-20 md:py-28 lg:py-32 bg-darker">
       <div className="max-w-7xl mx-auto px-6 lg:px-12">
         <Reveal y={16} delay={0}>
           <div className="text-center mb-14 lg:mb-16">
@@ -47,16 +46,14 @@ export function Credentials() {
               <span className="eyebrow">Formación & Títulos</span>
               <span className="w-12 h-px bg-copper opacity-40" />
             </div>
-            <h2 className="h-display text-white">
-              Formación académica{" "}
+            <h2 id="formacion-title" className="h-display text-white">
+              Formación en cirugía plástica{" "}
               <span className="h-accent-sage italic-none">& membresías</span>
             </h2>
           </div>
         </Reveal>
 
-        {/* Two-column */}
         <div className="flex flex-col lg:flex-row gap-16 items-stretch">
-          {/* LEFT */}
           <div className="w-full lg:w-[60%] flex flex-col">
             <div>
               <div className="flex items-center gap-3 mb-10">
@@ -86,7 +83,7 @@ export function Credentials() {
                         </h4>
                         <p className="font-sans text-sage text-sm mb-1">{item.institution}</p>
                         {item.detail && (
-                          <p className="font-sans text-xs text-white/40">{item.detail}</p>
+                          <p className="font-sans text-xs text-white/65">{item.detail}</p>
                         )}
                       </div>
                     </Reveal>
@@ -112,12 +109,14 @@ export function Credentials() {
               </ul>
             </Reveal>
           </div>
-
-          {/* RIGHT */}
           <div className="hidden lg:block lg:w-[40%] relative overflow-hidden rounded-md" style={{ minHeight: 520 }}>
             <img
-              src="/images/consultorio_dante_masedo_certificaciones.jpg"
-              alt="Consultorio Dr. Masedo"
+              src="https://res.cloudinary.com/dz9tuwczf/image/upload/v1781272538/consultorio_dante_masedo-17_1_eyvvya.jpg"
+              alt="Consultorios Güemes en Resistencia, Chaco, donde atiende el Dr. Masedo Carlos Dante"
+              width={1200}
+              height={1600}
+              loading="lazy"
+              decoding="async"
               className="absolute inset-0 w-full h-full object-cover"
             />
           </div>

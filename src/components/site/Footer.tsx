@@ -19,7 +19,6 @@ export function Footer() {
     <footer className="bg-deepest">
       <div className="max-w-7xl mx-auto px-6 lg:px-12 py-16">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-12">
-          {/* Brand */}
           <div className="lg:col-span-2">
             <div className="mb-6">
               <p className="font-script text-sm text-sage/85 uppercase mb-1">DR.</p>
@@ -29,7 +28,7 @@ export function Footer() {
               </p>
             </div>
 
-            <p className="font-sans text-white/35 text-sm leading-[1.8] max-w-xs mb-8">
+            <p className="font-sans text-white/70 text-sm leading-[1.8] max-w-xs mb-8">
               Comprometidos con la excelencia médica y el bienestar de cada paciente.
               Tu transformación comienza aquí.
             </p>
@@ -51,14 +50,13 @@ export function Footer() {
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label="Instagram"
-                className="w-9 h-9 flex items-center justify-center border border-sage/20 text-sage hover:opacity-70 transition"
+                className="flex h-11 w-11 items-center justify-center border border-sage/25 text-sage hover:opacity-70 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sage"
               >
                 <Instagram size={16} />
               </a>
             </div>
           </div>
 
-          {/* Links */}
           {FOOTER_COLS.map((col) => (
             <div key={col.title}>
               <p className="font-sans text-xs tracking-widest uppercase text-sage mb-6">{col.title}</p>
@@ -68,7 +66,7 @@ export function Footer() {
                     <a
                       href="#servicios"
                       onClick={(e) => { e.preventDefault(); goToServices(); }}
-                      className="font-sans text-sm text-white/35 hover:text-sage transition-colors"
+                      className="inline-flex min-h-8 items-center font-sans text-sm text-white/70 hover:text-sage transition-colors"
                     >
                       {link}
                     </a>
@@ -80,22 +78,21 @@ export function Footer() {
         </div>
       </div>
 
-      {/* Divider */}
       <div className="border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="font-sans text-xs text-white/20">
+          <p className="font-sans text-xs text-white/60">
             © 2026 Dr. Masedo Carlos Dante · Todos los derechos reservados · MP 3.479 — MN 91.339
           </p>
           <div className="flex items-center gap-6">
             {LEGAL.map((item) => (
-              <a key={item} href="#" className="font-sans text-xs text-white/20 hover:text-sage transition-colors">
+              <span key={item} className="font-sans text-xs text-white/60">
                 {item}
-              </a>
+              </span>
             ))}
             <button
               onClick={scrollToTop}
               aria-label="Volver arriba"
-              className="w-9 h-9 flex items-center justify-center border border-sage/15 text-sage hover:opacity-70 transition"
+              className="flex h-11 w-11 items-center justify-center border border-sage/25 text-sage hover:opacity-70 transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sage"
             >
               <ArrowUp size={14} />
             </button>

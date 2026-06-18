@@ -18,6 +18,8 @@ export function SectionProgress() {
   const [showAfterHero, setShowAfterHero] = useState(false);
 
   useEffect(() => {
+    let frame = 0;
+
     const compute = () => {
       const referenceY = window.scrollY + window.innerHeight * 0.35;
 
@@ -56,12 +58,21 @@ export function SectionProgress() {
       setProgress((activeIndex + intra) / denom);
     };
 
+    const scheduleCompute = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        compute();
+      });
+    };
+
     compute();
-    window.addEventListener("scroll", compute, { passive: true });
-    window.addEventListener("resize", compute);
+    window.addEventListener("scroll", scheduleCompute, { passive: true });
+    window.addEventListener("resize", scheduleCompute);
     return () => {
-      window.removeEventListener("scroll", compute);
-      window.removeEventListener("resize", compute);
+      if (frame) cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", scheduleCompute);
+      window.removeEventListener("resize", scheduleCompute);
     };
   }, []);
 
@@ -77,13 +88,11 @@ export function SectionProgress() {
         showAfterHero ? "opacity-100" : "opacity-0 pointer-events-none",
       )}
     >
-      <div className="relative flex flex-col items-center justify-between py-1 px-2 h-[280px]">
-        {/* Línea de fondo */}
-        <div className="absolute left-1/2 -translate-x-1/2 top-1.5 bottom-1.5 w-px bg-white/15" />
-        {/* Barra de progreso (alineada al recorrido de los dots) */}
+      <div className="relative flex flex-col items-center justify-between px-2 h-[300px]">
+        <div className="absolute left-1/2 -translate-x-1/2 top-[22px] bottom-[22px] w-px bg-white/15" />
         <div
-          className="absolute left-1/2 -translate-x-1/2 top-1.5 w-px bg-sage transition-[height] duration-200 ease-out"
-          style={{ height: `calc((100% - 12px) * ${progress})` }}
+          className="absolute left-1/2 -translate-x-1/2 top-[22px] w-px bg-sage transition-[height] duration-200 ease-out"
+          style={{ height: `calc((100% - 44px) * ${progress})` }}
         />
 
         {NAV_LINKS.map((link) => {
@@ -94,12 +103,13 @@ export function SectionProgress() {
               key={link.href}
               type="button"
               onClick={() => handleClick(link.href)}
-              className="group relative flex items-center justify-center w-3 h-3"
+              className="group relative flex h-11 w-11 items-center justify-center rounded-full transition-colors hover:bg-white/5 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sage"
               aria-label={`Ir a ${link.label}`}
+              aria-current={isActive ? "true" : undefined}
             >
               <span
                 className={cn(
-                  "block rounded-full transition-all duration-300",
+                  "block rounded-full transition-[width,height,background-color,box-shadow] duration-200",
                   isActive
                     ? "w-3 h-3 bg-sage shadow-dot-ring"
                     : "w-1.5 h-1.5 bg-white/40 group-hover:bg-white/80",
@@ -107,9 +117,9 @@ export function SectionProgress() {
               />
               <span
                 className={cn(
-                  "absolute right-full mr-3 whitespace-nowrap font-sans text-2xs tracking-brand-wide uppercase",
+                  "absolute right-full mr-1 whitespace-nowrap font-sans text-2xs tracking-brand-wide uppercase",
                   "px-2 py-1 rounded bg-dark/90 backdrop-blur text-white",
-                  "opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-all duration-200 pointer-events-none",
+                  "opacity-0 group-hover:opacity-100 translate-x-1 group-hover:translate-x-0 transition-[opacity,transform] duration-150 pointer-events-none",
                 )}
               >
                 {link.label}

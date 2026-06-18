@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode, TouchEvent } from "react";
 import { ChevronLeft, ChevronRight, Star } from "lucide-react";
 
@@ -24,7 +24,7 @@ function ArrowButton({ onClick, children, side }: { onClick: () => void; childre
       aria-label={side === "left" ? "Anterior" : "Siguiente"}
       className={[
         "absolute top-1/2 -translate-y-1/2 w-11 h-11 rounded-full text-white",
-        "flex items-center justify-center cursor-pointer z-20 transition-all duration-300",
+        "flex items-center justify-center cursor-pointer z-20 transition-[background-color,border-color,transform,opacity] duration-200 ease-out active:scale-95",
         "lg:bg-darker/80 lg:backdrop-blur-sm lg:border lg:border-sage/50",
         "lg:hover:bg-copper lg:hover:border-copper lg:hover:scale-110",
         "lg:shadow-card-soft",
@@ -40,17 +40,15 @@ export function Testimonials() {
   const [current, setCurrent] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
   const total = TESTIMONIALS.length;
-  const prev = () => setCurrent((c) => (c - 1 + total) % total);
-  const next = () => setCurrent((c) => (c + 1) % total);
+  const prev = useCallback(() => setCurrent((c) => (c - 1 + total) % total), [total]);
+  const next = useCallback(() => setCurrent((c) => (c + 1) % total), [total]);
 
-  // Auto-play
   useEffect(() => {
     if (isPaused) return;
     const id = setInterval(next, AUTOPLAY_MS);
     return () => clearInterval(id);
-  }, [isPaused, current]);
+  }, [isPaused, next]);
 
-  // Mobile drag
   const touchStartX = useRef<number | null>(null);
   const dragOffset = useRef(0);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -84,7 +82,11 @@ export function Testimonials() {
   const visible = [(current - 1 + total) % total, current, (current + 1) % total];
 
   return (
-    <section id="testimonios" className="py-20 md:py-28 lg:py-32 relative overflow-hidden bg-forest">
+    <section
+      id="testimonios"
+      aria-labelledby="testimonios-title"
+      className="py-20 md:py-28 lg:py-32 relative overflow-hidden bg-forest"
+    >
       <div className="max-w-7xl mx-auto px-6 lg:px-12 relative z-10">
         <div className="text-center mb-14 lg:mb-16">
           <div className="flex items-center justify-center gap-4 mb-4">
@@ -92,15 +94,14 @@ export function Testimonials() {
             <span className="font-sans text-xs tracking-brand-widest uppercase text-sage">Testimonios</span>
             <span className="h-px bg-copper opacity-40 animate-[grow-line_900ms_ease-out_both]" style={{ width: "3rem" }} />
           </div>
-          <h2 className="h-display-light text-white">
+          <h2 id="testimonios-title" className="h-display-light text-white">
             Lo que dicen <span className="text-sage">nuestros pacientes</span>
           </h2>
-          <p className="font-sans text-sage/70 text-sm md:text-base mt-4 max-w-xl mx-auto">
-            Historias reales de quienes confiaron en nuestro equipo
+          <p className="font-sans text-sage/90 text-sm md:text-base mt-4 max-w-xl mx-auto">
+            Comentarios sobre la experiencia de atención, confianza y seguimiento
           </p>
         </div>
 
-        {/* Carousel */}
         <div
           className="relative"
           style={{ overflow: "visible" }}
@@ -110,7 +111,6 @@ export function Testimonials() {
           <ArrowButton onClick={prev} side="left"><ChevronLeft size={18} /></ArrowButton>
           <ArrowButton onClick={next} side="right"><ChevronRight size={18} /></ArrowButton>
 
-          {/* Desktop */}
           <div
             className="hidden lg:grid gap-6 items-center"
             style={{ gridTemplateColumns: "15% 70% 15%" }}
@@ -122,11 +122,12 @@ export function Testimonials() {
               return (
                 <article
                   key={`${t.id}-${pos}`}
+                  aria-hidden={!isCenter}
                   className={[
-                    "relative bg-copper transition-all duration-500 overflow-hidden",
+                    "relative bg-copper transition-[opacity,transform,filter,border-color,box-shadow] duration-300 overflow-hidden",
                     isCenter
                       ? "p-10 scale-[1.02] opacity-100 border-t-2 border-sage shadow-card-hero animate-[fade-in_500ms_ease-out_both]"
-                      : "p-6 scale-[0.95] opacity-25 blur-[1px] border-t-2 border-transparent pointer-events-none",
+                      : "p-6 scale-[0.95] opacity-45 blur-[1px] border-t-2 border-transparent pointer-events-none",
                   ].join(" ")}
                   style={
                     !isCenter
@@ -141,7 +142,6 @@ export function Testimonials() {
                       : undefined
                   }
                 >
-                  {/* Sage glow accent on top */}
                   {isCenter && (
                     <div
                       className="absolute top-0 left-0 right-0 h-px"
@@ -153,7 +153,6 @@ export function Testimonials() {
                     />
                   )}
 
-                  {/* Decorative quote in card (serif) */}
                   {isCenter && (
                     <span
                       aria-hidden="true"
@@ -174,8 +173,6 @@ export function Testimonials() {
                       />
                     ))}
                   </div>
-                  {/* 0.9rem: subtítulo de sección — entre text-sm (14px) y text-base (16px). */}
-                  {/* No migrar a token: jerarquía intencional del diseño. */}
                   <blockquote
                     className={`font-sans leading-[1.75] mb-8 relative ${
                       isCenter ? "text-white text-base" : "text-white/90 text-[0.9rem]"
@@ -189,7 +186,6 @@ export function Testimonials() {
             })}
           </div>
 
-          {/* Mobile */}
           <div className="lg:hidden overflow-hidden w-screen -mx-6">
             <div
               ref={trackRef}
@@ -211,7 +207,7 @@ export function Testimonials() {
                   <article
                     key={t.id}
                     className={[
-                      "relative flex-shrink-0 p-7 bg-copper transition-all duration-300 overflow-hidden",
+                      "relative flex-shrink-0 p-7 bg-copper transition-[opacity,transform,border-color,box-shadow] duration-200 overflow-hidden",
                       isActive
                         ? "opacity-100 scale-100 border-t-2 border-sage shadow-card-elevated"
                         : "opacity-60 scale-[0.96] border-t-2 border-transparent",
@@ -232,7 +228,6 @@ export function Testimonials() {
                         <Star key={i} size={13} className="fill-gold text-gold" />
                       ))}
                     </div>
-                    {/* 0.9rem: subtítulo de sección — entre text-sm (14px) y text-base (16px). No migrar a token. */}
                     <blockquote className="font-sans text-white text-[0.9rem] leading-[1.75] mb-6 relative">
                       "{t.text}"
                     </blockquote>
@@ -243,24 +238,28 @@ export function Testimonials() {
             </div>
           </div>
 
-          {/* Dots — bar style */}
           <div className="flex items-center justify-center gap-2 mt-10">
             {TESTIMONIALS.map((_, i) => (
               <button
                 key={i}
+                type="button"
                 onClick={() => setCurrent(i)}
                 aria-label={`Ir al testimonio ${i + 1}`}
-                className={[
-                  "transition-all duration-500 rounded-full",
-                  i === current
-                    ? "w-8 h-1.5 bg-sage"
-                    : "w-2 h-2 bg-copper/40 hover:bg-copper/70",
-                ].join(" ")}
-              />
+                className="flex h-11 w-11 items-center justify-center rounded-full transition-[background-color,transform] duration-200 hover:bg-white/5 active:scale-95 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sage"
+              >
+                <span
+                  aria-hidden="true"
+                  className={[
+                    "block rounded-full transition-[width,height,background-color] duration-300",
+                    i === current
+                      ? "w-8 h-1.5 bg-sage"
+                      : "w-2 h-2 bg-copper hover:bg-copper",
+                  ].join(" ")}
+                />
+              </button>
             ))}
           </div>
 
-          {/* Auto-play progress bar */}
           <div className="mt-4 mx-auto max-w-[200px] h-px bg-white/10 overflow-hidden">
             <div
               key={`${current}-${isPaused}`}
@@ -273,33 +272,8 @@ export function Testimonials() {
           </div>
         </div>
 
-        {/* Google rating badge — redesigned */}
-        <div className="flex justify-center mt-14">
-          <div className="inline-flex items-center gap-5 px-7 py-4 bg-darker/40 border border-sage/20 backdrop-blur-sm">
-            {/* "G" mark */}
-            <div className="w-11 h-11 rounded-full bg-white flex items-center justify-center flex-shrink-0">
-              <span className="font-sans font-bold text-xl" style={{ color: "hsl(var(--brand-copper-dark))" }}>
-                G
-              </span>
-            </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-2">
-                <span className="font-sans font-semibold text-white text-2xl leading-none">4.9</span>
-                <div className="flex gap-0.5">
-                  {[1, 2, 3, 4, 5].map((i) => (
-                    <Star key={i} size={13} className="fill-gold text-gold" />
-                  ))}
-                </div>
-              </div>
-              <p className="font-sans text-sage/80 text-xs tracking-wide mt-1">
-                200+ reseñas verificadas en Google
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
 
-      {/* Local keyframes */}
       <style>{`
         @keyframes star-pop {
           0% { opacity: 0; transform: scale(0.4); }
@@ -327,7 +301,6 @@ function Author({ t, compact = false }: { t: typeof TESTIMONIALS[number]; compac
   const size = compact ? 38 : 44;
   return (
     <div className="flex items-center gap-3">
-      {/* Avatar with double ring */}
       <div
         className="rounded-full flex items-center justify-center flex-shrink-0 p-[2px]"
         style={{
@@ -350,7 +323,6 @@ function Author({ t, compact = false }: { t: typeof TESTIMONIALS[number]; compac
         </div>
       </div>
       <div>
-        {/* 0.9rem en variante no-compact: subtítulo intencional entre text-sm y text-base. */}
         <p className={`font-sans text-white font-semibold ${compact ? "text-xs" : "text-[0.9rem]"}`}>
           {t.name}
         </p>

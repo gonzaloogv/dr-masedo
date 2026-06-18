@@ -6,7 +6,6 @@ type RevealProps = {
   className?: string;
   delay?: number; // ms
   duration?: number; // ms
-  as?: keyof JSX.IntrinsicElements;
   /** Distancia inicial en px (vertical) */
   y?: number;
   /** Distancia inicial en px (horizontal) */
@@ -27,13 +26,12 @@ export function Reveal({
   className,
   delay = 0,
   duration = 700,
-  as: Tag = "div",
   y = 16,
   x = 0,
   scale = 1,
   threshold = 0.15,
 }: RevealProps) {
-  const ref = useRef<HTMLElement | null>(null);
+  const ref = useRef<HTMLDivElement | null>(null);
   // Detectar reduced-motion de forma síncrona para el primer render
   // y evitar el flash de "oculto" cuando no se debe animar.
   const getInitialAnimate = () => {
@@ -78,14 +76,12 @@ export function Reveal({
     };
   }, [animate, threshold]);
 
-  const Comp = Tag as any;
-
   const hiddenTransform = `translate3d(${x}px, ${y}px, 0) scale(${scale})`;
   const visibleTransform = "translate3d(0, 0, 0) scale(1)";
 
   return (
-    <Comp
-      ref={ref as any}
+    <div
+      ref={ref}
       className={cn("will-change-transform", className)}
       style={{
         opacity: animate ? (visible ? 1 : 0) : 1,
@@ -97,6 +93,6 @@ export function Reveal({
       }}
     >
       {children}
-    </Comp>
+    </div>
   );
 }

@@ -3,8 +3,8 @@ import { InstagramIcon } from "./InstagramIcon";
 import { INSTAGRAM_URL, openWhatsApp } from "@/lib/site";
 
 const INFO = [
-  { icon: Phone, label: "Teléfono", value: "03624-428782 / 03624-413405", sub: "Consultorios Güemes" },
-  { icon: Mail, label: "Email", value: "dantemasedo@hotmail.com", sub: "Respondemos en 24-48 horas hábiles" },
+  { icon: Phone, label: "Teléfono", value: "03624-428782 / 03624-413405", sub: "Consultorios Güemes", href: "tel:+543624428782" },
+  { icon: Mail, label: "Email", value: "dantemasedo@hotmail.com", sub: "Respondemos en 24-48 horas hábiles", href: "mailto:dantemasedo@hotmail.com" },
   { icon: MapPin, label: "Consultorio", value: "Remedios de Escalada 599", sub: "Resistencia, Chaco — Consultorios Güemes" },
   { icon: Clock, label: "Horarios", value: "Lunes a Viernes: 10:00 — 20:00", sub: "" },
   { icon: InstagramIcon, label: "Instagram", value: "@dr.masedo", sub: "", href: INSTAGRAM_URL },
@@ -18,7 +18,7 @@ const MAPS_EXTERNAL =
 
 export function Contact() {
   return (
-    <section id="contacto" className="py-20 md:py-28 lg:py-32 bg-darker">
+    <section id="contacto" aria-labelledby="contacto-title" className="py-20 md:py-28 lg:py-32 bg-darker">
       <div className="max-w-7xl mx-auto px-6 lg:px-12">
         <div className="text-center mb-14 lg:mb-16">
           <div className="flex items-center justify-center gap-4 mb-4">
@@ -26,27 +26,24 @@ export function Contact() {
             <span className="eyebrow">Contacto</span>
             <span className="w-12 h-px bg-copper opacity-40" />
           </div>
-          <h2 className="h-display text-white">
-            Agendá tu{" "}
-            <span className="font-serif italic font-normal text-sage">consulta</span>
+          <h2 id="contacto-title" className="h-display text-white">
+            Consultorio de cirugía plástica{" "}
+            <span className="font-serif italic font-normal text-sage">en Resistencia</span>
           </h2>
-          {/* 0.9rem: subtítulo de sección — entre text-sm (14px) y text-base (16px). */}
-          {/* No migrar a token: jerarquía intencional del diseño. */}
-          <p className="mt-4 max-w-2xl mx-auto font-sans text-white/45 text-[0.9rem] leading-[1.8]">
+          <p className="mt-4 max-w-2xl mx-auto font-sans text-white/75 text-[0.9rem] leading-[1.8]">
             Escribinos por WhatsApp o llamanos directamente. Te respondemos en
             24-48 horas hábiles.
           </p>
         </div>
 
         <div className="grid lg:grid-cols-2 gap-10">
-          {/* Map */}
           <div className="order-2 lg:order-1 flex flex-col gap-3">
             <div
               className="overflow-hidden w-full min-h-[400px] rounded-lg flex-1"
               style={{ border: "1px solid hsl(var(--brand-sage) / 0.1)" }}
             >
               <iframe
-                title="Ubicación Consultorios Güemes"
+                title="Ubicación de Consultorios Güemes en Resistencia, Chaco"
                 src={MAPS_EMBED}
                 width="100%"
                 height="100%"
@@ -61,13 +58,12 @@ export function Contact() {
               href={MAPS_EXTERNAL}
               target="_blank"
               rel="noreferrer"
-              className="self-end font-sans text-xs tracking-widest uppercase text-sage/70 hover:text-sage transition"
+              className="inline-flex min-h-10 items-center self-end font-sans text-xs tracking-widest uppercase text-sage hover:text-white transition"
             >
               Abrir en Google Maps →
             </a>
           </div>
 
-          {/* Info */}
           <div
             className="order-1 lg:order-2 flex flex-col gap-8 rounded-lg p-6 lg:p-8 min-h-[400px]"
             style={{ border: "1px solid hsl(var(--brand-sage) / 0.1)" }}
@@ -93,17 +89,21 @@ export function Contact() {
                       {"href" in item && item.href ? (
                         <a
                           href={item.href}
-                          target="_blank"
-                          rel="noreferrer"
+                          target={item.href.startsWith("http") ? "_blank" : undefined}
+                          rel={item.href.startsWith("http") ? "noreferrer" : undefined}
                           className="font-sans text-white text-sm hover:text-sage transition"
                         >
                           {item.value}
                         </a>
+                      ) : item.label === "Consultorio" ? (
+                        <address className="not-italic font-sans text-white text-sm">
+                          {item.value}
+                        </address>
                       ) : (
                         <p className="font-sans text-white text-sm">{item.value}</p>
                       )}
                       {item.sub && (
-                        <p className="font-sans text-white/35 text-xs">{item.sub}</p>
+                        <p className="font-sans text-white/65 text-xs">{item.sub}</p>
                       )}
                     </div>
                   </div>
@@ -111,10 +111,9 @@ export function Contact() {
               </div>
             </div>
 
-            {/* WhatsApp */}
             <button
-              onClick={openWhatsApp}
-              className="mt-auto w-full py-4 flex items-center justify-center gap-3 rounded-lg text-white font-sans font-medium text-xs tracking-brand-tight transition-all duration-300 hover:opacity-90"
+              onClick={() => openWhatsApp()}
+              className="mt-auto w-full py-4 flex items-center justify-center gap-3 rounded-lg text-white font-sans font-medium text-xs tracking-brand-tight transition-[opacity,transform] duration-200 ease-out hover:opacity-90 active:scale-[0.98] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sage"
               style={{ backgroundColor: "hsl(var(--brand-whatsapp))" }}
             >
               <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

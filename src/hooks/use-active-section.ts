@@ -9,6 +9,8 @@ export function useActiveSection(sectionIds: string[]) {
   const [activeId, setActiveId] = useState<string>(sectionIds[0] ?? "");
 
   useEffect(() => {
+    let frame = 0;
+
     const compute = () => {
       const referenceY = window.scrollY + window.innerHeight * 0.35;
       let current = sectionIds[0] ?? "";
@@ -26,12 +28,21 @@ export function useActiveSection(sectionIds: string[]) {
       setActiveId(current);
     };
 
+    const scheduleCompute = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        compute();
+      });
+    };
+
     compute();
-    window.addEventListener("scroll", compute, { passive: true });
-    window.addEventListener("resize", compute);
+    window.addEventListener("scroll", scheduleCompute, { passive: true });
+    window.addEventListener("resize", scheduleCompute);
     return () => {
-      window.removeEventListener("scroll", compute);
-      window.removeEventListener("resize", compute);
+      if (frame) cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", scheduleCompute);
+      window.removeEventListener("resize", scheduleCompute);
     };
   }, [sectionIds]);
 

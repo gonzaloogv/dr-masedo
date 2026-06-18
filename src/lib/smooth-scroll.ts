@@ -7,6 +7,12 @@ export function smoothScrollToHash(hash: string, delay = 0) {
   const target = document.querySelector<HTMLElement>(hash);
   if (!target) return;
 
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (prefersReducedMotion) {
+    target.scrollIntoView({ block: "start" });
+    return;
+  }
+
   const start = window.scrollY;
   const end = target.getBoundingClientRect().top + window.scrollY;
   const distance = end - start;

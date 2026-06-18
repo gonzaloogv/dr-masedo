@@ -3,6 +3,7 @@ import { openWhatsApp } from "@/lib/site";
 
 export function WhatsAppFloat() {
   const [reduceMotion, setReduceMotion] = useState(false);
+  const [liftFromHeroStats, setLiftFromHeroStats] = useState(true);
 
   useEffect(() => {
     const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -12,13 +13,35 @@ export function WhatsAppFloat() {
     return () => mq.removeEventListener?.("change", update);
   }, []);
 
+  useEffect(() => {
+    let frame = 0;
+    const update = () => setLiftFromHeroStats(window.scrollY < window.innerHeight * 0.7);
+    const scheduleUpdate = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        update();
+      });
+    };
+    update();
+    window.addEventListener("scroll", scheduleUpdate, { passive: true });
+    window.addEventListener("resize", scheduleUpdate);
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+      window.removeEventListener("scroll", scheduleUpdate);
+      window.removeEventListener("resize", scheduleUpdate);
+    };
+  }, []);
+
   return (
     <button
-      onClick={openWhatsApp}
+      onClick={() => openWhatsApp()}
       aria-label="Contactar por WhatsApp"
-      className="fixed bottom-6 right-6 z-40 group"
+      className={[
+        "fixed right-6 z-40 group transition-[bottom] duration-300",
+        liftFromHeroStats ? "bottom-28" : "bottom-6",
+      ].join(" ")}
     >
-      {/* Pulse rings (omitted in reduced motion) */}
       {!reduceMotion && (
         <>
           <span
@@ -38,7 +61,6 @@ export function WhatsAppFloat() {
         </>
       )}
 
-      {/* Main button */}
       <span
         className="relative flex items-center justify-center w-14 h-14 rounded-full text-white transition-transform duration-300 group-hover:scale-110"
         style={{
@@ -51,7 +73,6 @@ export function WhatsAppFloat() {
         </svg>
       </span>
 
-      {/* Tooltip */}
       <span
         className="absolute right-full mr-3 top-1/2 -translate-y-1/2 whitespace-nowrap px-3 py-2 rounded-md text-white font-sans text-xs tracking-wide opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none"
         style={{ backgroundColor: "hsl(var(--brand-darker))" }}

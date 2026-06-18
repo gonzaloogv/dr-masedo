@@ -1,12 +1,16 @@
 import { useRef, useState } from "react";
 import { ArrowRight, ChevronDown } from "lucide-react";
 import { openWhatsApp } from "@/lib/site";
+import { getResultSetByServiceTitle } from "@/lib/results";
 import { Reveal } from "@/components/Reveal";
 
 const INITIAL_VISIBLE = 6;
 
 type Service = { title: string; description: string };
 type Category = { id: string; label: string; services: Service[] };
+type ServicesProps = {
+  onOpenResult?: (resultId: string) => void;
+};
 
 const CATEGORIES: Category[] = [
   {
@@ -66,7 +70,7 @@ const CATEGORIES: Category[] = [
   },
 ];
 
-export function Services() {
+export function Services({ onOpenResult }: ServicesProps) {
   const [activeId, setActiveId] = useState("estetica");
   const [expanded, setExpanded] = useState(false);
   const sectionRef = useRef<HTMLElement>(null);
@@ -94,18 +98,22 @@ export function Services() {
   };
 
   return (
-    <section ref={sectionRef} id="servicios" className="py-20 md:py-28 lg:py-32 bg-cream">
+    <section
+      ref={sectionRef}
+      id="servicios"
+      aria-labelledby="servicios-title"
+      className="py-20 md:py-28 lg:py-32 bg-cream"
+    >
       <div className="max-w-7xl mx-auto px-6 lg:px-12">
-        {/* Header */}
         <Reveal y={16} delay={0}>
           <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between mb-14 lg:mb-16 gap-8">
             <div>
               <div className="flex items-center gap-4 mb-4">
                 <span className="eyebrow-line" />
-                <span className="eyebrow">Procedimientos</span>
+                <span className="eyebrow text-copper-dark">Procedimientos</span>
               </div>
-              <h2 className="h-display text-darker">
-                Nuestros <span className="h-accent">servicios</span>
+              <h2 id="servicios-title" className="h-display text-darker">
+                Cirugía plástica y estética <span className="h-accent">en Resistencia</span>
               </h2>
             </div>
 
@@ -117,7 +125,7 @@ export function Services() {
                     key={cat.id}
                     onClick={() => handleCategoryChange(cat.id)}
                     className={[
-                      "px-5 py-2.5 font-sans text-2xs tracking-brand-wide uppercase border transition-all duration-300",
+                      "min-h-11 px-5 py-2.5 font-sans text-2xs tracking-brand-wide uppercase border transition-[background-color,border-color,color,transform] duration-200 ease-out active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-copper",
                       isActive
                         ? "bg-copper text-white border-copper"
                         : "bg-transparent text-copper border-forest-2/40 hover:border-copper",
@@ -131,9 +139,7 @@ export function Services() {
           </div>
         </Reveal>
 
-        {/* Grid */}
         <div className="flex flex-wrap items-stretch gap-px bg-border">
-          {/* Initial visible services */}
           {current.services.slice(0, INITIAL_VISIBLE).map((service, idx) => (
             <Reveal
               key={service.title}
@@ -141,11 +147,10 @@ export function Services() {
               delay={idx * 60}
               className="w-full sm:w-[calc(50%-0.5px)] lg:w-[calc(33.333%-0.67px)] flex flex-col"
             >
-              <ServiceCard service={service} />
+              <ServiceCard service={service} onOpenResult={onOpenResult} />
             </Reveal>
           ))}
 
-          {/* Extra services: animated reveal */}
           {hasMore &&
             current.services.slice(INITIAL_VISIBLE).map((service, idx) => (
               <div
@@ -162,7 +167,7 @@ export function Services() {
                 }}
                 aria-hidden={!expanded}
               >
-                <ServiceCard service={service} />
+                <ServiceCard service={service} onOpenResult={onOpenResult} />
               </div>
             ))}
         </div>
@@ -171,7 +176,7 @@ export function Services() {
           <div className="flex justify-center mt-10">
             <button
               onClick={handleToggle}
-              className="group inline-flex items-center gap-3 px-6 py-3 font-sans text-2xs tracking-[0.18em] uppercase text-copper border border-copper/40 hover:border-copper hover:bg-copper hover:text-white transition-all duration-300"
+              className="group inline-flex min-h-11 items-center gap-3 px-6 py-3 font-sans text-2xs tracking-[0.18em] uppercase text-copper border border-copper/40 hover:border-copper hover:bg-copper hover:text-white active:scale-[0.97] transition-[background-color,border-color,color,transform] duration-200 ease-out focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-copper"
               aria-expanded={expanded}
             >
               <span>
@@ -189,22 +194,28 @@ export function Services() {
           <p className="font-sans text-sm text-muted-foreground mb-6">
             ¿No encontrás lo que buscás? Consultá por otros procedimientos disponibles.
           </p>
-          <button onClick={openWhatsApp} className="btn-primary">Solicitar información</button>
+          <button onClick={() => openWhatsApp()} className="btn-primary">Solicitar información</button>
         </div>
       </div>
     </section>
   );
 }
 
-function ServiceCard({ service }: { service: Service }) {
+function ServiceCard({
+  service,
+  onOpenResult,
+}: {
+  service: Service;
+  onOpenResult?: (resultId: string) => void;
+}) {
+  const linkedResult = getResultSetByServiceTitle(service.title);
+
   return (
     <div className="group p-8 lg:p-10 flex flex-col gap-4 h-full bg-cream hover:bg-forest transition-colors duration-500 cursor-default">
       <span className="text-xl text-sage transition-colors duration-300 group-hover:text-white/70">✦</span>
-      {/* text-[1.1rem]: tamaño intermedio entre text-base y text-lg para títulos de tarjeta. */}
       <h3 className="font-sans text-[1.1rem] font-semibold text-darker group-hover:text-white transition-colors duration-300">
         {service.title}
       </h3>
-      {/* leading-[1.8]: paridad con cuerpos del sitio (no usar leading-relaxed=1.625). */}
       <p className="font-sans text-sm leading-[1.8] text-muted-foreground group-hover:text-white/65 transition-colors duration-300">
         {service.description}
       </p>
@@ -215,18 +226,22 @@ function ServiceCard({ service }: { service: Service }) {
               `Hola Dr. Masedo, me gustaría recibir información sobre el procedimiento de ${service.title}.`
             )
           }
-          className="flex items-center gap-2 hover:opacity-75 transition-opacity"
+          className="inline-flex min-h-11 items-center gap-2 pr-2 text-sage hover:opacity-75 transition-opacity focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-copper"
         >
-          <span className="font-sans text-xs tracking-widest uppercase text-sage">Consultar</span>
-          <ArrowRight size={14} className="text-sage" />
+          <span className="font-sans text-xs tracking-widest uppercase">Consultar</span>
+          <ArrowRight size={14} />
         </button>
-        <a
-          href="#galeria"
-          className="flex items-center gap-2 hover:opacity-75 transition-opacity"
-        >
-          <span className="font-sans text-xs tracking-widest uppercase text-sage">Ver resultados</span>
-          <ArrowRight size={14} className="text-sage" />
-        </a>
+        {linkedResult && onOpenResult && (
+          <button
+            type="button"
+            onClick={() => onOpenResult(linkedResult.id)}
+            className="inline-flex min-h-11 items-center gap-2 border border-copper-dark/30 px-3 py-2 text-copper-dark transition-[background-color,border-color,color,opacity,transform] duration-200 hover:bg-copper hover:!text-white active:scale-[0.97] group-hover:border-[#D9B092]/70 group-hover:text-[#D9B092] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-copper"
+            aria-label={`Ver resultados de ${service.title}`}
+          >
+            <span className="font-sans text-xs tracking-widest uppercase">Ver resultados</span>
+            <ArrowRight size={14} />
+          </button>
+        )}
       </div>
     </div>
   );
