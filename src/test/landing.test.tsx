@@ -53,6 +53,42 @@ describe("landing", () => {
     );
   });
 
+  it("keeps the About portrait frame and certification badge outside reveal clipping", () => {
+    const { container } = render(<App />);
+
+    const aboutImage = container.querySelector<HTMLImageElement>('#sobre-mi img[src*="consultorio_dante_masedo-37"]');
+    const revealWrapper = aboutImage?.parentElement?.parentElement as HTMLElement | null;
+    const frame = revealWrapper?.querySelector<HTMLDivElement>(".absolute.-top-6.-left-6");
+    const badge = revealWrapper?.querySelector<HTMLDivElement>(".absolute.bottom-8.-right-6");
+
+    expect(revealWrapper?.style.clipPath).toBe("");
+    expect(frame).toBeInTheDocument();
+    expect(badge).toBeInTheDocument();
+    expect(badge).toHaveTextContent(/Dr\. Masedo Carlos Dante/i);
+  });
+
+  it("keeps carousel arrow controls outside reveal clipping", () => {
+    const { container } = render(<App />);
+
+    const galleryCarousel = container.querySelector<HTMLElement>("[data-gallery-carousel]");
+    const galleryReveal = galleryCarousel?.parentElement as HTMLElement | null;
+
+    const testimonialsCarousel = Array.from(
+      container.querySelectorAll<HTMLElement>("#testimonios div")
+    ).find(
+      (element) =>
+        element.style.overflow === "visible" &&
+        element.querySelector('button[aria-label="Anterior"]') &&
+        element.querySelector('button[aria-label="Siguiente"]')
+    );
+    const testimonialsReveal = testimonialsCarousel?.parentElement as HTMLElement | null;
+
+    expect(galleryReveal?.style.clipPath).toBe("");
+    expect(galleryReveal?.style.transitionProperty).toBe("opacity, transform");
+    expect(testimonialsReveal?.style.clipPath).toBe("");
+    expect(testimonialsReveal?.style.transitionProperty).toBe("opacity, transform");
+  });
+
   it("removes Google review claims and keeps contact actions accessible", () => {
     render(<App />);
 
@@ -193,15 +229,15 @@ describe("landing", () => {
     expect(gallery.querySelector("[data-gallery-mosaic]")).not.toBeInTheDocument();
     expect(gallery.querySelector("[data-gallery-track]")).not.toBeInTheDocument();
     expect(gallery.querySelectorAll("[data-gallery-dot]").length).toBe(0);
-    expect(
-      screen.getByRole("button", { name: /ver resultado anterior/i }).className
-    ).toContain("rounded-full");
-    expect(
-      screen.getByRole("button", { name: /ver resultado anterior/i }).className
-    ).toContain("lg:bg-darker/80");
-    expect(
-      screen.getByRole("button", { name: /ver resultado siguiente/i }).className
-    ).toContain("lg:hover:bg-copper");
+    const previousButton = screen.getByRole("button", { name: /ver resultado anterior/i });
+    const nextButton = screen.getByRole("button", { name: /ver resultado siguiente/i });
+    expect(previousButton.className).toContain("rounded-full");
+    expect(previousButton.className).toContain("lg:bg-darker/80");
+    expect(previousButton.className).toContain("left-0");
+    expect(previousButton.className).not.toContain("-left");
+    expect(nextButton.className).toContain("lg:hover:bg-copper");
+    expect(nextButton.className).toContain("right-0");
+    expect(nextButton.className).not.toContain("-right");
 
     const slides = gallery.querySelectorAll("[data-gallery-slide]");
     expect(slides.length).toBe(3);

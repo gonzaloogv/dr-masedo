@@ -22,7 +22,7 @@ export function About() {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-16 items-center">
-          <Reveal className="relative" x={-24} y={0} delay={0}>
+          <Reveal preset="media" clip={false} className="relative" x={-24} y={0} delay={0}>
             <div
               className="absolute -top-6 -left-6 w-full h-full hidden lg:block"
               style={{ border: "2px solid hsl(var(--brand-sage) / 0.4)" }}
@@ -49,7 +49,7 @@ export function About() {
               </p>
             </div>
           </Reveal>
-          <Reveal className="relative z-10" x={24} y={0} delay={120}>
+          <Reveal preset="text" className="relative z-10" x={24} y={0} delay={90}>
             <h2 id="sobre-mi-title" className="h-display-light mb-8 text-darker">
               Cirujano plástico en{" "}
               <span className="h-display text-forest-2">Resistencia, Chaco</span>

@@ -39,7 +39,7 @@ export function Credentials() {
   return (
     <section id="formacion" aria-labelledby="formacion-title" className="py-20 md:py-28 lg:py-32 bg-darker">
       <div className="max-w-7xl mx-auto px-6 lg:px-12">
-        <Reveal y={16} delay={0}>
+        <Reveal preset="section" delay={0}>
           <div className="text-center mb-14 lg:mb-16">
             <div className="flex items-center justify-center gap-4 mb-4">
               <span className="w-12 h-px bg-copper opacity-40" />
@@ -67,7 +67,7 @@ export function Credentials() {
                 <div className="absolute left-0 top-0 bottom-0 w-px bg-forest-2" />
                 <div className="flex flex-col gap-10 pl-8">
                   {EDUCATION.map((item, i) => (
-                    <Reveal key={i} y={14} delay={i * 60}>
+                    <Reveal key={i} preset="text" delay={Math.min(i * 45, 180)}>
                       <div className="relative">
                         <div
                           className="absolute -left-8 top-1.5 w-3 h-3 rounded-full bg-sage"
@@ -92,7 +92,7 @@ export function Credentials() {
               </div>
             </div>
 
-            <Reveal y={14} delay={120} className="mt-12">
+            <Reveal preset="text" delay={120} className="mt-12">
               <div className="flex items-center gap-3 mb-8">
                 <Globe size={20} className="text-sage" />
                 <h3 className="font-sans text-white text-sm tracking-brand-wider uppercase">

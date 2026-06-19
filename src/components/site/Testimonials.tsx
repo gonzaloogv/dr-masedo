@@ -89,7 +89,7 @@ export function Testimonials() {
       className="py-20 md:py-28 lg:py-32 relative overflow-hidden bg-forest"
     >
       <div className="max-w-7xl mx-auto px-6 lg:px-12 relative z-10">
-        <Reveal y={16} delay={0}>
+        <Reveal preset="section" delay={0}>
           <div className="text-center mb-14 lg:mb-16">
             <div className="flex items-center justify-center gap-4 mb-4">
               <span className="h-px bg-copper opacity-40 animate-[grow-line_900ms_ease-out_both]" style={{ width: "3rem" }} />
@@ -105,7 +105,7 @@ export function Testimonials() {
           </div>
         </Reveal>
 
-        <Reveal y={18} delay={80}>
+        <Reveal preset="media" clip={false} delay={80}>
           <div
             className="relative"
             style={{ overflow: "visible" }}

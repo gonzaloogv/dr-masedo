@@ -183,7 +183,7 @@ export function Gallery({ resultRequest }: GalleryProps) {
       className="overflow-x-hidden bg-dark py-20 md:py-28 lg:py-32"
     >
       <div className="mx-auto max-w-7xl px-6 lg:px-12">
-        <Reveal y={16} delay={0}>
+        <Reveal preset="section" delay={0}>
           <div className="mb-12 text-center lg:mb-14">
             <div className="mb-4 flex items-center justify-center gap-4">
               <span className="h-px w-12 bg-copper opacity-40" />
@@ -202,7 +202,7 @@ export function Gallery({ resultRequest }: GalleryProps) {
           </div>
         </Reveal>
 
-        <Reveal y={18} delay={80}>
+        <Reveal preset="media" clip={false} delay={80}>
           <div
             data-gallery-carousel
             data-autoplay-interval={AUTOPLAY_DELAY}
@@ -376,7 +376,7 @@ function GalleryArrowButton({
         "lg:bg-darker/80 lg:backdrop-blur-sm lg:border lg:border-sage/50",
         "lg:hover:bg-copper lg:hover:border-copper lg:hover:scale-110",
         "lg:shadow-card-soft",
-        side === "left" ? "-left-[18px] lg:-left-10" : "-right-[18px] lg:-right-10",
+        side === "left" ? "left-0" : "right-0",
       ].join(" ")}
     >
       {children}

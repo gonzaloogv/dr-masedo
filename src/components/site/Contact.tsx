@@ -21,7 +21,7 @@ export function Contact() {
   return (
     <section id="contacto" aria-labelledby="contacto-title" className="py-20 md:py-28 lg:py-32 bg-darker">
       <div className="max-w-7xl mx-auto px-6 lg:px-12">
-        <Reveal y={16} delay={0}>
+        <Reveal preset="section" delay={0}>
           <div className="text-center mb-14 lg:mb-16">
             <div className="flex items-center justify-center gap-4 mb-4">
               <span className="w-12 h-px bg-copper opacity-40" />
@@ -40,7 +40,7 @@ export function Contact() {
         </Reveal>
 
         <div className="grid lg:grid-cols-2 gap-10">
-          <Reveal y={18} x={-8} delay={80} className="order-2 lg:order-1 flex flex-col gap-3">
+          <Reveal preset="media" x={-8} delay={80} className="order-2 lg:order-1 flex flex-col gap-3">
             <div
               className="overflow-hidden w-full min-h-[400px] rounded-lg flex-1"
               style={{ border: "1px solid hsl(var(--brand-sage) / 0.1)" }}
@@ -67,7 +67,7 @@ export function Contact() {
             </a>
           </Reveal>
 
-          <Reveal y={18} x={8} delay={140} className="order-1 lg:order-2">
+          <Reveal preset="text" x={8} delay={120} className="order-1 lg:order-2">
             <div
               className="flex h-full min-h-[400px] flex-col gap-8 rounded-lg p-6 lg:p-8"
               style={{ border: "1px solid hsl(var(--brand-sage) / 0.1)" }}

@@ -105,7 +105,7 @@ export function Services({ onOpenResult }: ServicesProps) {
       className="py-20 md:py-28 lg:py-32 bg-cream"
     >
       <div className="max-w-7xl mx-auto px-6 lg:px-12">
-        <Reveal y={16} delay={0}>
+        <Reveal preset="section" delay={0}>
           <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between mb-14 lg:mb-16 gap-8">
             <div>
               <div className="flex items-center gap-4 mb-4">
@@ -143,8 +143,8 @@ export function Services({ onOpenResult }: ServicesProps) {
           {current.services.slice(0, INITIAL_VISIBLE).map((service, idx) => (
             <Reveal
               key={service.title}
-              y={14}
-              delay={idx * 60}
+              preset="card"
+              delay={Math.min(idx * 45, 180)}
               className="w-full sm:w-[calc(50%-0.5px)] lg:w-[calc(33.333%-0.67px)] flex flex-col"
             >
               <ServiceCard service={service} onOpenResult={onOpenResult} />
