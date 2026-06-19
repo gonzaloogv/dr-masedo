@@ -80,9 +80,22 @@ export function Footer() {
 
       <div className="border-t border-white/5">
         <div className="max-w-7xl mx-auto px-6 lg:px-12 py-6 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <p className="font-sans text-xs text-white/60">
-            © 2026 Dr. Masedo Carlos Dante · Todos los derechos reservados · MP 3.479 — MN 91.339
-          </p>
+          <div className="text-center sm:text-left">
+            <p className="font-sans text-xs text-white/60">
+              © 2026 Dr. Masedo Carlos Dante · Todos los derechos reservados · MP 3.479 — MN 91.339
+            </p>
+            <p className="mt-2 font-sans text-[11px] tracking-wide text-white/35">
+              Desarrollado por{" "}
+              <a
+                href="https://gonzaloogv.dev/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-sage/75 transition-colors hover:text-sage"
+              >
+                Gonzalo Gomez Vignudo
+              </a>
+            </p>
+          </div>
           <div className="flex items-center gap-6">
             {LEGAL.map((item) => (
               <span key={item} className="font-sans text-xs text-white/60">

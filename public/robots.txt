@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 
-Sitemap: https://drmasedo.com.ar/sitemap.xml
+Sitemap: https://drmasedo.com/sitemap.xml

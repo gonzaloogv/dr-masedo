@@ -72,20 +72,34 @@ describe("landing", () => {
   });
 
   it("ships valid crawler files for production SEO", () => {
+    const indexPath = resolve(process.cwd(), "index.html");
     const robotsPath = resolve(process.cwd(), "public", "robots.txt");
     const sitemapPath = resolve(process.cwd(), "public", "sitemap.xml");
+    const siteConfigPath = resolve(process.cwd(), "src", "lib", "site.ts");
 
+    expect(existsSync(indexPath)).toBe(true);
     expect(existsSync(robotsPath)).toBe(true);
     expect(existsSync(sitemapPath)).toBe(true);
 
+    const index = readFileSync(indexPath, "utf8");
     const robots = readFileSync(robotsPath, "utf8");
+    const siteConfig = readFileSync(siteConfigPath, "utf8");
+    const oldDomain = ["drmasedo", "com", "ar"].join(".");
+
+    expect([index, robots, siteConfig].join("\n")).not.toContain(oldDomain);
+    expect(index).toContain('href="https://drmasedo.com/"');
+    expect(index).toContain('content="https://drmasedo.com/"');
+    expect(index).toContain('"@id": "https://drmasedo.com/#physician"');
+    expect(index).toContain('"url": "https://drmasedo.com/"');
     expect(robots).toMatch(/^User-agent:\s*\*$/m);
     expect(robots).toMatch(/^Allow:\s*\/$/m);
-    expect(robots).toMatch(/^Sitemap:\s*https:\/\/drmasedo\.com\.ar\/sitemap\.xml$/m);
+    expect(robots).toMatch(/^Sitemap:\s*https:\/\/drmasedo\.com\/sitemap\.xml$/m);
     expect(robots).not.toMatch(/<!doctype|<html/i);
 
     const sitemap = readFileSync(sitemapPath, "utf8");
-    expect(sitemap).toContain("<loc>https://drmasedo.com.ar/</loc>");
+
+    expect(sitemap).not.toContain(oldDomain);
+    expect(sitemap).toContain("<loc>https://drmasedo.com/</loc>");
   });
 
   it("shows result CTAs only for services with linked clinical photos", () => {
@@ -229,5 +243,34 @@ describe("landing", () => {
       .forEach((card) => {
         expect(card.className).toContain("opacity-45");
       });
+  });
+
+  it("uses restrained reveal motion for testimonials and contact blocks", () => {
+    const { container } = render(<App />);
+
+    const hasRevealAncestor = (element: Element | null) => {
+      let current = element?.parentElement ?? null;
+      while (current) {
+        if (current instanceof HTMLElement && current.style.transitionProperty === "opacity, transform") {
+          return true;
+        }
+        current = current.parentElement;
+      }
+      return false;
+    };
+
+    expect(hasRevealAncestor(container.querySelector("#testimonios-title"))).toBe(true);
+    expect(hasRevealAncestor(container.querySelector("#contacto-title"))).toBe(true);
+    expect(hasRevealAncestor(container.querySelector("#contacto address"))).toBe(true);
+  });
+
+  it("credits the site developer in the footer", () => {
+    render(<App />);
+
+    expect(screen.getByText(/desarrollado por/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /gonzalo gomez vignudo/i })).toHaveAttribute(
+      "href",
+      "https://gonzaloogv.dev/"
+    );
   });
 });

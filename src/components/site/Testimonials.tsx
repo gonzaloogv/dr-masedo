@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { ReactNode, TouchEvent } from "react";
 import { ChevronLeft, ChevronRight, Star } from "lucide-react";
+import { Reveal } from "@/components/Reveal";
 
 const TESTIMONIALS = [
   { id: 1, name: "Valentina M.", age: 32, procedure: "Rinoplastia", initials: "VM", stars: 5,
@@ -88,28 +89,31 @@ export function Testimonials() {
       className="py-20 md:py-28 lg:py-32 relative overflow-hidden bg-forest"
     >
       <div className="max-w-7xl mx-auto px-6 lg:px-12 relative z-10">
-        <div className="text-center mb-14 lg:mb-16">
-          <div className="flex items-center justify-center gap-4 mb-4">
-            <span className="h-px bg-copper opacity-40 animate-[grow-line_900ms_ease-out_both]" style={{ width: "3rem" }} />
-            <span className="font-sans text-xs tracking-brand-widest uppercase text-sage">Testimonios</span>
-            <span className="h-px bg-copper opacity-40 animate-[grow-line_900ms_ease-out_both]" style={{ width: "3rem" }} />
+        <Reveal y={16} delay={0}>
+          <div className="text-center mb-14 lg:mb-16">
+            <div className="flex items-center justify-center gap-4 mb-4">
+              <span className="h-px bg-copper opacity-40 animate-[grow-line_900ms_ease-out_both]" style={{ width: "3rem" }} />
+              <span className="font-sans text-xs tracking-brand-widest uppercase text-sage">Testimonios</span>
+              <span className="h-px bg-copper opacity-40 animate-[grow-line_900ms_ease-out_both]" style={{ width: "3rem" }} />
+            </div>
+            <h2 id="testimonios-title" className="h-display-light text-white">
+              Lo que dicen <span className="text-sage">nuestros pacientes</span>
+            </h2>
+            <p className="font-sans text-sage/90 text-sm md:text-base mt-4 max-w-xl mx-auto">
+              Comentarios sobre la experiencia de atención, confianza y seguimiento
+            </p>
           </div>
-          <h2 id="testimonios-title" className="h-display-light text-white">
-            Lo que dicen <span className="text-sage">nuestros pacientes</span>
-          </h2>
-          <p className="font-sans text-sage/90 text-sm md:text-base mt-4 max-w-xl mx-auto">
-            Comentarios sobre la experiencia de atención, confianza y seguimiento
-          </p>
-        </div>
+        </Reveal>
 
-        <div
-          className="relative"
-          style={{ overflow: "visible" }}
-          onMouseEnter={() => setIsPaused(true)}
-          onMouseLeave={() => setIsPaused(false)}
-        >
-          <ArrowButton onClick={prev} side="left"><ChevronLeft size={18} /></ArrowButton>
-          <ArrowButton onClick={next} side="right"><ChevronRight size={18} /></ArrowButton>
+        <Reveal y={18} delay={80}>
+          <div
+            className="relative"
+            style={{ overflow: "visible" }}
+            onMouseEnter={() => setIsPaused(true)}
+            onMouseLeave={() => setIsPaused(false)}
+          >
+            <ArrowButton onClick={prev} side="left"><ChevronLeft size={18} /></ArrowButton>
+            <ArrowButton onClick={next} side="right"><ChevronRight size={18} /></ArrowButton>
 
           <div
             className="hidden lg:grid gap-6 items-center"
@@ -126,7 +130,7 @@ export function Testimonials() {
                   className={[
                     "relative bg-copper transition-[opacity,transform,filter,border-color,box-shadow] duration-300 overflow-hidden",
                     isCenter
-                      ? "p-10 scale-[1.02] opacity-100 border-t-2 border-sage shadow-card-hero animate-[fade-in_500ms_ease-out_both]"
+                      ? "p-10 scale-[1.02] opacity-100 border-t-2 border-sage shadow-card-hero animate-[fade-in_300ms_ease-out_both]"
                       : "p-6 scale-[0.95] opacity-45 blur-[1px] border-t-2 border-transparent pointer-events-none",
                   ].join(" ")}
                   style={
@@ -168,8 +172,8 @@ export function Testimonials() {
                       <Star
                         key={i}
                         size={isCenter ? 16 : 14}
-                        className="fill-gold text-gold animate-[star-pop_500ms_ease-out_both]"
-                        style={{ animationDelay: `${i * 80}ms` }}
+                        className="fill-gold text-gold animate-[star-pop_360ms_ease-out_both]"
+                        style={{ animationDelay: `${i * 60}ms` }}
                       />
                     ))}
                   </div>
@@ -270,7 +274,8 @@ export function Testimonials() {
               }}
             />
           </div>
-        </div>
+          </div>
+        </Reveal>
 
       </div>
 
