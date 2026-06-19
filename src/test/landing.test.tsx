@@ -102,6 +102,26 @@ describe("landing", () => {
     expect(sitemap).toContain("<loc>https://drmasedo.com/</loc>");
   });
 
+  it("declares production favicon and social preview assets", () => {
+    const indexPath = resolve(process.cwd(), "index.html");
+    const imagePath = (...segments: string[]) => resolve(process.cwd(), "public", "images", ...segments);
+
+    expect(existsSync(imagePath("favicon.svg"))).toBe(true);
+    expect(existsSync(imagePath("apple-touch-icon.png"))).toBe(true);
+    expect(existsSync(imagePath("icon-192.png"))).toBe(true);
+    expect(existsSync(imagePath("icon-512.png"))).toBe(true);
+    expect(existsSync(imagePath("og-image.png"))).toBe(true);
+
+    const index = readFileSync(indexPath, "utf8");
+
+    expect(index).toContain('<link rel="icon" type="image/svg+xml" href="/images/favicon.svg" />');
+    expect(index).toContain('<link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png" />');
+    expect(index).toContain('<link rel="icon" type="image/png" sizes="192x192" href="/images/icon-192.png" />');
+    expect(index).toContain('<link rel="icon" type="image/png" sizes="512x512" href="/images/icon-512.png" />');
+    expect(index).toContain('<meta property="og:image" content="https://drmasedo.com/images/og-image.png" />');
+    expect(index).toContain('<meta name="twitter:image" content="https://drmasedo.com/images/og-image.png" />');
+  });
+
   it("shows result CTAs only for services with linked clinical photos", () => {
     render(<App />);
 
