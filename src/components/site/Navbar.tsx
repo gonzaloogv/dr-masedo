@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Menu, X } from "lucide-react";
 import { NAV_LINKS, openWhatsApp } from "@/lib/site";
 import { useActiveSection } from "@/hooks/use-active-section";
+import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock";
 import { smoothScrollToHash } from "@/lib/smooth-scroll";
 import { cn } from "@/lib/utils";
 
@@ -9,12 +10,15 @@ export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const [isEntering, setIsEntering] = useState(false);
+  const [isScrollLocked, setIsScrollLocked] = useState(false);
   const closeTimerRef = useRef<number | null>(null);
   const menuButtonRef = useRef<HTMLButtonElement | null>(null);
   const mobileMenuRef = useRef<HTMLDivElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const sectionIds = useMemo(() => NAV_LINKS.map((l) => l.href.replace("#", "")), []);
   const activeId = useActiveSection(sectionIds);
+
+  useBodyScrollLock(isScrollLocked);
 
   useEffect(() => {
     let frame = 0;
@@ -38,12 +42,14 @@ export function Navbar() {
 
   const openMenu = useCallback(() => {
     if (closeTimerRef.current) { window.clearTimeout(closeTimerRef.current); closeTimerRef.current = null; }
+    setIsScrollLocked(true);
     setIsOpen(true);
     requestAnimationFrame(() => requestAnimationFrame(() => setIsEntering(true)));
   }, []);
 
   const closeMenu = useCallback((restoreFocus = true) => {
     if (closeTimerRef.current) window.clearTimeout(closeTimerRef.current);
+    setIsScrollLocked(false);
     setIsEntering(false);
     closeTimerRef.current = window.setTimeout(() => {
       setIsOpen(false);
@@ -100,8 +106,8 @@ export function Navbar() {
     >
       <div
         className={cn(
-          "w-full px-4 lg:px-10 flex items-center justify-between transition-[height] duration-300",
-          isScrolled ? "h-20 lg:h-16" : "h-20",
+          "w-full px-4 xl:px-10 flex items-center justify-between transition-[height] duration-300",
+          isScrolled ? "h-20 xl:h-16" : "h-20",
         )}
       >
         <a
@@ -113,7 +119,7 @@ export function Navbar() {
           <span className="font-script text-[28px] text-white">Masedo Carlos Dante</span>
         </a>
 
-        <ul className="hidden lg:flex items-center gap-8">
+        <ul className="hidden xl:flex items-center gap-8">
           {NAV_LINKS.map((link) => {
             const id = link.href.replace("#", "");
             const isActive = activeId === id;
@@ -140,7 +146,7 @@ export function Navbar() {
           })}
         </ul>
 
-        <button type="button" onClick={() => openWhatsApp()} className="hidden lg:inline-block btn-compact">
+        <button type="button" onClick={() => openWhatsApp()} className="hidden xl:inline-block btn-compact">
           Solicitar consulta
         </button>
 
@@ -148,10 +154,12 @@ export function Navbar() {
           ref={menuButtonRef}
           type="button"
           onClick={() => (isOpen ? closeMenu() : openMenu())}
-          className="flex h-11 w-11 items-center justify-center text-white lg:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sage"
+          className="flex h-11 w-11 items-center justify-center text-white xl:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-sage"
           aria-label={isOpen ? "Cerrar menú" : "Abrir menú"}
           aria-controls="mobile-menu"
           aria-expanded={isOpen}
+          aria-hidden={isOpen}
+          tabIndex={isOpen ? -1 : 0}
         >
           {isOpen ? <X size={24} /> : <Menu size={24} />}
         </button>
@@ -159,7 +167,7 @@ export function Navbar() {
 
       {isOpen && (
         <div
-          className="fixed inset-0 z-50 lg:hidden"
+          className="fixed inset-0 z-50 xl:hidden"
           style={{
             backgroundColor: isEntering ? "hsl(0 0% 0% / 0.4)" : "hsl(0 0% 0% / 0)",
             backdropFilter: isEntering ? "blur(4px)" : "blur(0px)",

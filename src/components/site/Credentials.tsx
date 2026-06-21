@@ -111,7 +111,7 @@ export function Credentials() {
           </div>
           <div className="hidden lg:block lg:w-[40%] relative overflow-hidden rounded-md" style={{ minHeight: 520 }}>
             <img
-              src="https://res.cloudinary.com/dz9tuwczf/image/upload/v1781272538/consultorio_dante_masedo-17_1_eyvvya.jpg"
+              src="https://res.cloudinary.com/dz9tuwczf/image/upload/t_optimize/consultorio_dante_masedo-17_1_eyvvya.jpg"
               alt="Consultorios Güemes en Resistencia, Chaco, donde atiende el Dr. Masedo Carlos Dante"
               width={1200}
               height={1600}

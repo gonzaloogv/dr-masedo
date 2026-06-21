@@ -32,7 +32,7 @@ export function About() {
               style={{ height: "clamp(350px, 50vw, 600px)", maxHeight: 600 }}
             >
               <img
-                src="https://res.cloudinary.com/dz9tuwczf/image/upload/v1781272538/consultorio_dante_masedo-37_pmuhop.jpg"
+                src="https://res.cloudinary.com/dz9tuwczf/image/upload/t_optimize/consultorio_dante_masedo-37_pmuhop.jpg"
                 alt="Dr. Masedo Carlos Dante, cirujano plástico en Resistencia, Chaco"
                 width={1200}
                 height={1600}

@@ -90,7 +90,7 @@ export function Hero() {
     <section
       id="inicio"
       aria-labelledby="inicio-title"
-      className="relative w-full min-h-screen flex items-center justify-center overflow-hidden"
+      className="relative w-full min-h-[100dvh] flex items-center justify-center overflow-hidden"
     >
       <div className="absolute inset-0">
         <video

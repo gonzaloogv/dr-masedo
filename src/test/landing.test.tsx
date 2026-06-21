@@ -1,8 +1,14 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import App from "@/App";
+
+afterEach(() => {
+  vi.restoreAllMocks();
+  document.documentElement.style.overflow = "";
+  document.body.style.overflow = "";
+});
 
 describe("landing", () => {
   it("renders the doctor landing page", () => {
@@ -45,11 +51,11 @@ describe("landing", () => {
     const trainingImage = container.querySelector('img[alt*="Consultorios Güemes"]');
     expect(aboutImage).toHaveAttribute(
       "src",
-      "https://res.cloudinary.com/dz9tuwczf/image/upload/v1781272538/consultorio_dante_masedo-37_pmuhop.jpg"
+      "https://res.cloudinary.com/dz9tuwczf/image/upload/t_optimize/consultorio_dante_masedo-37_pmuhop.jpg"
     );
     expect(trainingImage).toHaveAttribute(
       "src",
-      "https://res.cloudinary.com/dz9tuwczf/image/upload/v1781272538/consultorio_dante_masedo-17_1_eyvvya.jpg"
+      "https://res.cloudinary.com/dz9tuwczf/image/upload/t_optimize/consultorio_dante_masedo-17_1_eyvvya.jpg"
     );
   });
 
@@ -267,6 +273,157 @@ describe("landing", () => {
     expect(within(gallery as HTMLElement).queryByText(/rinoplastia/i)).not.toBeInTheDocument();
     expect(within(gallery as HTMLElement).queryByText(/liposucci/i)).not.toBeInTheDocument();
     expect(within(gallery as HTMLElement).queryByText(/espacio reservado/i)).not.toBeInTheDocument();
+  });
+
+  it("keeps inactive gallery slides out of the keyboard order while preserving modal open behavior", () => {
+    const { container } = render(<App />);
+    const gallery = container.querySelector("#galeria");
+    expect(gallery).toBeInTheDocument();
+    if (!gallery) return;
+
+    const slides = Array.from(gallery.querySelectorAll<HTMLButtonElement>("[data-gallery-slide]"));
+    expect(slides).toHaveLength(3);
+
+    expect(slides[0]).toHaveAttribute("tabindex", "0");
+    expect(slides[0]).toHaveAttribute("aria-hidden", "false");
+    slides.slice(1).forEach((slide) => {
+      expect(slide).toHaveAttribute("tabindex", "-1");
+      expect(slide).toHaveAttribute("aria-hidden", "true");
+    });
+
+    fireEvent.click(slides[0]);
+    expect(screen.getByRole("dialog", { name: /mamoplastia de aumento/i })).toBeInTheDocument();
+  });
+
+  it("preloads adjacent modal images when a gallery result opens", async () => {
+    const originalImage = window.Image;
+    const preloadedSources: string[] = [];
+
+    class MockImage {
+      decoding = "";
+
+      set src(value: string) {
+        preloadedSources.push(value);
+      }
+
+      get src() {
+        return "";
+      }
+    }
+
+    Object.defineProperty(window, "Image", {
+      configurable: true,
+      writable: true,
+      value: MockImage,
+    });
+
+    try {
+      const { container } = render(<App />);
+      const firstSlide = container.querySelector<HTMLButtonElement>(
+        '[data-result-id="mamoplastia-aumento"]'
+      );
+      expect(firstSlide).toBeInTheDocument();
+      if (!firstSlide) return;
+
+      fireEvent.click(firstSlide);
+      await screen.findByRole("dialog", { name: /mamoplastia de aumento/i });
+
+      await waitFor(() => {
+        expect(preloadedSources).toEqual(
+          expect.arrayContaining([
+            expect.stringContaining("mamoplastia-02"),
+            expect.stringContaining("mamoplastia-04"),
+          ])
+        );
+      });
+    } finally {
+      Object.defineProperty(window, "Image", {
+        configurable: true,
+        writable: true,
+        value: originalImage,
+      });
+    }
+  });
+
+  it("locks page scroll while the mobile menu or gallery modal is open", () => {
+    const { container } = render(<App />);
+
+    fireEvent.click(screen.getByRole("button", { name: /abrir men/i }));
+    expect(document.documentElement.style.overflow).toBe("hidden");
+    expect(document.body.style.overflow).toBe("hidden");
+
+    fireEvent.click(screen.getByRole("button", { name: /cerrar men/i }));
+    expect(document.documentElement.style.overflow).toBe("");
+    expect(document.body.style.overflow).toBe("");
+
+    const firstSlide = container.querySelector<HTMLButtonElement>("[data-gallery-slide]");
+    expect(firstSlide).toBeInTheDocument();
+    if (!firstSlide) return;
+
+    fireEvent.click(firstSlide);
+    expect(document.documentElement.style.overflow).toBe("hidden");
+    expect(document.body.style.overflow).toBe("hidden");
+
+    fireEvent.click(screen.getByRole("button", { name: /cerrar resultados/i }));
+    expect(document.documentElement.style.overflow).toBe("");
+    expect(document.body.style.overflow).toBe("");
+  });
+
+  it("honors reduced motion by disabling testimonial autoplay progress", () => {
+    vi.spyOn(window, "matchMedia").mockImplementation((query: string) => ({
+      matches: query === "(prefers-reduced-motion: reduce)",
+      media: query,
+      onchange: null,
+      addListener: () => {},
+      removeListener: () => {},
+      addEventListener: () => {},
+      removeEventListener: () => {},
+      dispatchEvent: () => false,
+    }));
+    const setIntervalSpy = vi.spyOn(window, "setInterval");
+
+    const { container } = render(<App />);
+
+    expect(setIntervalSpy).not.toHaveBeenCalled();
+    const progress = container.querySelector<HTMLElement>("[data-testimonials-progress]");
+    expect(progress).toBeInTheDocument();
+    expect(progress?.style.animation).toBe("none");
+    expect(progress?.style.width).toBe("0%");
+  });
+
+  it("keeps contact links as full-row touch targets", () => {
+    render(<App />);
+
+    const phone = screen.getByRole("link", { name: /tel.fono.*03624-428782/i });
+    const email = screen.getByRole("link", { name: /email.*dantemasedo@hotmail.com/i });
+    const instagram = screen.getByRole("link", { name: /instagram.*@dr\.masedo/i });
+
+    [phone, email, instagram].forEach((link) => {
+      expect(link.className).toContain("min-h-11");
+      expect(link.className).toContain("w-full");
+      expect(link.className).toContain("p-2");
+    });
+  });
+
+  it("keeps footer service links as full-row touch targets", () => {
+    render(<App />);
+
+    ["Abdominoplastía", "Botox", "Borrar tatuajes"].forEach((label) => {
+      const link = screen.getByRole("link", { name: label });
+      expect(link.className).toContain("min-h-11");
+      expect(link.className).toContain("w-full");
+      expect(link.className).toContain("px-2");
+    });
+  });
+
+  it("keeps the desktop navbar until xl and uses dynamic viewport height for the hero", () => {
+    const { container } = render(<App />);
+
+    expect(container.querySelector("section#inicio")?.className).toContain("min-h-[100dvh]");
+    expect(container.querySelector("section#inicio")?.className).not.toContain("min-h-screen");
+    expect(container.querySelector("nav ul")?.className).toContain("hidden xl:flex");
+    expect(container.querySelector("nav .btn-compact")?.className).toContain("hidden xl:inline-block");
+    expect(screen.getByRole("button", { name: /abrir men/i }).className).toContain("xl:hidden");
   });
 
   it("keeps brand CTA colors while preserving non-invasive contrast fixes", () => {

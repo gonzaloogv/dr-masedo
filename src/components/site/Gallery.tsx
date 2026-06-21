@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Reveal } from "@/components/Reveal";
+import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock";
 import { getResultSetById, RESULT_SETS } from "@/lib/results";
 
 export type ResultRequest = {
@@ -63,6 +64,9 @@ export function Gallery({ resultRequest }: GalleryProps) {
   const dialogRef = useRef<HTMLDivElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const lastFocusedRef = useRef<HTMLElement | null>(null);
+  const preloadedModalImagesRef = useRef<Set<string>>(new Set());
+
+  useBodyScrollLock(Boolean(modal));
 
   const goToPreviousSlide = useCallback(() => {
     setActiveIndex((current) => (current - 1 + slides.length) % slides.length);
@@ -172,6 +176,29 @@ export function Gallery({ resultRequest }: GalleryProps) {
     if (modal) closeButtonRef.current?.focus();
   }, [modal]);
 
+  useEffect(() => {
+    if (!modal || typeof Image === "undefined") return;
+
+    const result = getResultSetById(modal.resultId);
+    const images = result?.modalImages ?? [];
+    if (images.length <= 1) return;
+
+    const adjacentIndexes = new Set([
+      (modal.index - 1 + images.length) % images.length,
+      (modal.index + 1) % images.length,
+    ]);
+
+    adjacentIndexes.forEach((index) => {
+      const src = images[index]?.src;
+      if (!src || preloadedModalImagesRef.current.has(src)) return;
+
+      preloadedModalImagesRef.current.add(src);
+      const image = new Image();
+      image.decoding = "async";
+      image.src = src;
+    });
+  }, [modal]);
+
   const activeResult = modal ? getResultSetById(modal.resultId) : null;
   const activeImage = activeResult?.modalImages[modal?.index ?? 0] ?? null;
 
@@ -218,12 +245,17 @@ export function Gallery({ resultRequest }: GalleryProps) {
                 className="flex h-full transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]"
                 style={{ transform: `translateX(-${activeIndex * 100}%)` }}
               >
-                {slides.map((slide) => (
+                {slides.map((slide, index) => {
+                  const isActiveSlide = index === activeIndex;
+
+                  return (
                   <button
                     key={slide.id}
                     type="button"
                     data-gallery-slide
                     data-result-id={slide.resultId}
+                    tabIndex={isActiveSlide ? 0 : -1}
+                    aria-hidden={!isActiveSlide}
                     className="group relative h-full min-w-full overflow-hidden text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-sage"
                     onClick={() => openResult(slide.resultId, 0)}
                     aria-label={`${slide.label} - ${slide.procedure}`}
@@ -240,7 +272,8 @@ export function Gallery({ resultRequest }: GalleryProps) {
                     </picture>
                     <SlideOverlay slide={slide} />
                   </button>
-                ))}
+                  );
+                })}
               </div>
             </div>
 

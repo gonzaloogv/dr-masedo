@@ -39,16 +39,29 @@ function ArrowButton({ onClick, children, side }: { onClick: () => void; childre
 
 export function Testimonials() {
   const [current, setCurrent] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
+  const [isInteractionPaused, setIsInteractionPaused] = useState(false);
+  const [reducedMotion, setReducedMotion] = useState(
+    () => typeof window !== "undefined" && Boolean(window.matchMedia?.("(prefers-reduced-motion: reduce)").matches),
+  );
   const total = TESTIMONIALS.length;
   const prev = useCallback(() => setCurrent((c) => (c - 1 + total) % total), [total]);
   const next = useCallback(() => setCurrent((c) => (c + 1) % total), [total]);
+  const isAutoplayPaused = reducedMotion || isInteractionPaused;
 
   useEffect(() => {
-    if (isPaused) return;
+    const mediaQuery = window.matchMedia?.("(prefers-reduced-motion: reduce)");
+    const updatePreference = () => setReducedMotion(Boolean(mediaQuery?.matches));
+
+    updatePreference();
+    mediaQuery?.addEventListener?.("change", updatePreference);
+    return () => mediaQuery?.removeEventListener?.("change", updatePreference);
+  }, []);
+
+  useEffect(() => {
+    if (isAutoplayPaused) return;
     const id = setInterval(next, AUTOPLAY_MS);
     return () => clearInterval(id);
-  }, [isPaused, next]);
+  }, [isAutoplayPaused, next]);
 
   const touchStartX = useRef<number | null>(null);
   const dragOffset = useRef(0);
@@ -72,7 +85,9 @@ export function Testimonials() {
   };
   const handleTouchEnd = () => {
     const delta = dragOffset.current;
-    if (trackRef.current) trackRef.current.style.transition = "transform 350ms ease-out";
+    if (trackRef.current) {
+      trackRef.current.style.transition = reducedMotion ? "none" : "transform 350ms ease-out";
+    }
     if (delta < -50) next();
     else if (delta > 50) prev();
     else if (trackRef.current) trackRef.current.style.transform = trackTransform(current);
@@ -92,9 +107,9 @@ export function Testimonials() {
         <Reveal preset="section" delay={0}>
           <div className="text-center mb-14 lg:mb-16">
             <div className="flex items-center justify-center gap-4 mb-4">
-              <span className="h-px bg-copper opacity-40 animate-[grow-line_900ms_ease-out_both]" style={{ width: "3rem" }} />
+              <span className={`h-px bg-copper opacity-40 ${reducedMotion ? "" : "animate-[grow-line_900ms_ease-out_both]"}`} style={{ width: "3rem" }} />
               <span className="font-sans text-xs tracking-brand-widest uppercase text-sage">Testimonios</span>
-              <span className="h-px bg-copper opacity-40 animate-[grow-line_900ms_ease-out_both]" style={{ width: "3rem" }} />
+              <span className={`h-px bg-copper opacity-40 ${reducedMotion ? "" : "animate-[grow-line_900ms_ease-out_both]"}`} style={{ width: "3rem" }} />
             </div>
             <h2 id="testimonios-title" className="h-display-light text-white">
               Lo que dicen <span className="text-sage">nuestros pacientes</span>
@@ -109,8 +124,10 @@ export function Testimonials() {
           <div
             className="relative"
             style={{ overflow: "visible" }}
-            onMouseEnter={() => setIsPaused(true)}
-            onMouseLeave={() => setIsPaused(false)}
+            onMouseEnter={() => setIsInteractionPaused(true)}
+            onMouseLeave={() => setIsInteractionPaused(false)}
+            onFocusCapture={() => setIsInteractionPaused(true)}
+            onBlurCapture={() => setIsInteractionPaused(false)}
           >
             <ArrowButton onClick={prev} side="left"><ChevronLeft size={18} /></ArrowButton>
             <ArrowButton onClick={next} side="right"><ChevronRight size={18} /></ArrowButton>
@@ -130,7 +147,7 @@ export function Testimonials() {
                   className={[
                     "relative bg-copper transition-[opacity,transform,filter,border-color,box-shadow] duration-300 overflow-hidden",
                     isCenter
-                      ? "p-10 scale-[1.02] opacity-100 border-t-2 border-sage shadow-card-hero animate-[fade-in_300ms_ease-out_both]"
+                      ? `p-10 scale-[1.02] opacity-100 border-t-2 border-sage shadow-card-hero ${reducedMotion ? "" : "animate-[fade-in_300ms_ease-out_both]"}`
                       : "p-6 scale-[0.95] opacity-45 blur-[1px] border-t-2 border-transparent pointer-events-none",
                   ].join(" ")}
                   style={
@@ -172,7 +189,7 @@ export function Testimonials() {
                       <Star
                         key={i}
                         size={isCenter ? 16 : 14}
-                        className="fill-gold text-gold animate-[star-pop_360ms_ease-out_both]"
+                        className={`fill-gold text-gold ${reducedMotion ? "" : "animate-[star-pop_360ms_ease-out_both]"}`}
                         style={{ animationDelay: `${i * 60}ms` }}
                       />
                     ))}
@@ -201,7 +218,7 @@ export function Testimonials() {
                 gap: `${GAP}vw`,
                 width: `${total * SLOT + OFFSET}vw`,
                 transform: trackTransform(current),
-                transition: "transform 350ms ease-out",
+                transition: reducedMotion ? "none" : "transform 350ms ease-out",
                 willChange: "transform",
               }}
             >
@@ -266,11 +283,12 @@ export function Testimonials() {
 
           <div className="mt-4 mx-auto max-w-[200px] h-px bg-white/10 overflow-hidden">
             <div
-              key={`${current}-${isPaused}`}
+              key={`${current}-${isAutoplayPaused}`}
+              data-testimonials-progress
               className="h-full bg-sage origin-left"
               style={{
-                animation: isPaused ? "none" : `progress-bar ${AUTOPLAY_MS}ms linear forwards`,
-                width: isPaused ? "0%" : "100%",
+                animation: isAutoplayPaused ? "none" : `progress-bar ${AUTOPLAY_MS}ms linear forwards`,
+                width: isAutoplayPaused ? "0%" : "100%",
               }}
             />
           </div>

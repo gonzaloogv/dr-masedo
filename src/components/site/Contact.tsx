@@ -77,41 +77,55 @@ export function Contact() {
                   Información de contacto
                 </p>
 
-                <div className="flex flex-col gap-5">
-                  {INFO.map((item) => (
-                    <div key={item.label} className="flex gap-4">
-                      <div
-                        className="w-10 h-10 flex items-center justify-center flex-shrink-0 text-sage rounded-md border border-sage/15"
-                        style={{ backgroundColor: "hsl(var(--brand-forest-2) / 0.4)" }}
-                      >
-                        <item.icon size={16} />
+                <div className="flex flex-col gap-3">
+                  {INFO.map((item) => {
+                    const Icon = item.icon;
+                    const content = (
+                      <>
+                        <div
+                          className="w-10 h-10 flex items-center justify-center flex-shrink-0 text-sage rounded-md border border-sage/15"
+                          style={{ backgroundColor: "hsl(var(--brand-forest-2) / 0.4)" }}
+                        >
+                          <Icon size={16} />
+                        </div>
+                        <div>
+                          <p className="font-sans text-xs tracking-widest uppercase text-sage mb-0.5">
+                            {item.label}
+                          </p>
+                          {item.label === "Consultorio" ? (
+                            <address className="not-italic font-sans text-white text-sm">
+                              {item.value}
+                            </address>
+                          ) : (
+                            <p className="font-sans text-white text-sm">{item.value}</p>
+                          )}
+                          {item.sub && (
+                            <p className="font-sans text-white/65 text-xs">{item.sub}</p>
+                          )}
+                        </div>
+                      </>
+                    );
+
+                    if ("href" in item && item.href) {
+                      return (
+                        <a
+                          key={item.label}
+                          href={item.href}
+                          target={item.href.startsWith("http") ? "_blank" : undefined}
+                          rel={item.href.startsWith("http") ? "noreferrer" : undefined}
+                          className="-mx-2 flex min-h-11 w-full gap-4 rounded-md p-2 transition-colors hover:bg-forest-2/25 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sage"
+                        >
+                          {content}
+                        </a>
+                      );
+                    }
+
+                    return (
+                      <div key={item.label} className="-mx-2 flex min-h-11 w-full gap-4 p-2">
+                        {content}
                       </div>
-                      <div>
-                        <p className="font-sans text-xs tracking-widest uppercase text-sage mb-0.5">
-                          {item.label}
-                        </p>
-                        {"href" in item && item.href ? (
-                          <a
-                            href={item.href}
-                            target={item.href.startsWith("http") ? "_blank" : undefined}
-                            rel={item.href.startsWith("http") ? "noreferrer" : undefined}
-                            className="font-sans text-white text-sm hover:text-sage transition"
-                          >
-                            {item.value}
-                          </a>
-                        ) : item.label === "Consultorio" ? (
-                          <address className="not-italic font-sans text-white text-sm">
-                            {item.value}
-                          </address>
-                        ) : (
-                          <p className="font-sans text-white text-sm">{item.value}</p>
-                        )}
-                        {item.sub && (
-                          <p className="font-sans text-white/65 text-xs">{item.sub}</p>
-                        )}
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 

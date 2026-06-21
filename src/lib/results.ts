@@ -34,37 +34,37 @@ export const RESULT_SETS: ResultSet[] = [
     serviceTitles: ["Aumento de mamas", "Mamoplastia de Aumento"],
     galleryImages: [
       {
-        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/v1781279072/mamoplastia-01_32_frjrtg.png",
+        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/t_optimize/mamoplastia-01_32_frjrtg.png",
         alt: "Resultado de mamoplastia de aumento caso 1 por el Dr. Masedo Carlos Dante",
       },
       {
-        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/v1781279074/mamoplastia-02_32_qodruf.png",
+        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/t_optimize/mamoplastia-02_32_qodruf.png",
         alt: "Resultado de mamoplastia de aumento caso 2 por el Dr. Masedo Carlos Dante",
       },
       {
-        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/v1781279077/mamoplastia-03_32_uodk8c.png",
+        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/t_optimize/mamoplastia-03_32_uodk8c.png",
         alt: "Resultado de mamoplastia de aumento caso 3 por el Dr. Masedo Carlos Dante",
       },
       {
-        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/v1781279079/mamoplastia-04_32_jsusi8.png",
+        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/t_optimize/mamoplastia-04_32_jsusi8.png",
         alt: "Resultado de mamoplastia de aumento caso 4 por el Dr. Masedo Carlos Dante",
       },
     ],
     modalImages: [
       {
-        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/v1781279071/mamoplastia-01_llctwx.png",
+        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/t_optimize/mamoplastia-01_llctwx.png",
         alt: "Fotografia clinica completa de mamoplastia de aumento caso 1",
       },
       {
-        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/v1781279073/mamoplastia-02_lpytrl.png",
+        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/t_optimize/mamoplastia-02_lpytrl.png",
         alt: "Fotografia clinica completa de mamoplastia de aumento caso 2",
       },
       {
-        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/v1781279076/mamoplastia-03_xiw2ew.png",
+        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/t_optimize/mamoplastia-03_xiw2ew.png",
         alt: "Fotografia clinica completa de mamoplastia de aumento caso 3",
       },
       {
-        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/v1781279078/mamoplastia-04_b6sybk.png",
+        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/t_optimize/mamoplastia-04_b6sybk.png",
         alt: "Fotografia clinica completa de mamoplastia de aumento caso 4",
       },
     ],
@@ -76,29 +76,29 @@ export const RESULT_SETS: ResultSet[] = [
     serviceTitles: ["Abdominoplastía", "Abdominoplastia"],
     galleryImages: [
       {
-        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/v1781279038/abdominoplastia-01_32_qftfri.png",
+        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/t_optimize/abdominoplastia-01_32_qftfri.png",
         alt: "Resultado de abdominoplastia caso 1 por el Dr. Masedo Carlos Dante",
       },
       {
-        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/v1781279039/abdominoplastia-02_32_fim20n.png",
+        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/v1782018027/abdominoplastia-02_32_fim20n.webp",
         alt: "Resultado de abdominoplastia caso 2 por el Dr. Masedo Carlos Dante",
       },
       {
-        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/v1781279069/abdominoplastia-03_32_vkhx5o.png",
+        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/v1782017974/abdominoplastia-03_32_vkhx5o.webp",
         alt: "Resultado de abdominoplastia caso 3 por el Dr. Masedo Carlos Dante",
       },
     ],
     modalImages: [
       {
-        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/v1781279039/abdominoplastia-01_fatsey.png",
+        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/v1782017837/abdominoplastia-01_fatsey.webp",
         alt: "Fotografia clinica completa de abdominoplastia caso 1",
       },
       {
-        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/v1781279040/abdominoplastia-02_ntjitb.png",
+        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/v1782017600/abdominoplastia-02_ntjitb.webp",
         alt: "Fotografia clinica completa de abdominoplastia caso 2",
       },
       {
-        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/v1781279042/abdominoplastia-03_sedm61.png",
+        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/v1782017360/abdominoplastia-03_sedm61.webp",
         alt: "Fotografia clinica completa de abdominoplastia caso 3",
       },
     ],
@@ -110,21 +110,21 @@ export const RESULT_SETS: ResultSet[] = [
     serviceTitles: ["Mastopexia", "Pexia mas protesis", "Pexia más prótesis"],
     galleryImages: [
       {
-        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/v1781279082/pex-01_32_xwyfum.png",
+        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/t_optimize/pex-01_32_xwyfum.png",
         alt: "Resultado de pexia mas protesis caso 1 por el Dr. Masedo Carlos Dante",
       },
       {
-        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/v1781279084/pex-02_32_bbjzeo.png",
+        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/t_optimize/pex-02_32_bbjzeo.png",
         alt: "Resultado de pexia mas protesis caso 2 por el Dr. Masedo Carlos Dante",
       },
     ],
     modalImages: [
       {
-        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/v1781279081/pex-01_vdffzs.png",
+        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/t_optimize/pex-01_vdffzs.png",
         alt: "Fotografia clinica completa de pexia mas protesis caso 1",
       },
       {
-        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/v1781279083/pex-02_jnusnh.png",
+        src: "https://res.cloudinary.com/dz9tuwczf/image/upload/t_optimize/pex-02_jnusnh.png",
         alt: "Fotografia clinica completa de pexia mas protesis caso 2",
       },
     ],

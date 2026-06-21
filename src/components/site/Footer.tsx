@@ -66,7 +66,7 @@ export function Footer() {
                     <a
                       href="#servicios"
                       onClick={(e) => { e.preventDefault(); goToServices(); }}
-                      className="inline-flex min-h-8 items-center font-sans text-sm text-white/70 hover:text-sage transition-colors"
+                      className="-mx-2 flex min-h-11 w-full items-center rounded px-2 font-sans text-sm text-white/70 transition-colors hover:bg-white/5 hover:text-sage focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sage"
                     >
                       {link}
                     </a>
