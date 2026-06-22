@@ -36,7 +36,7 @@ function buildSlides(): GallerySlide[] {
   return RESULT_ORDER.map((resultId) => {
     const result = RESULT_SETS.find((item) => item.id === resultId);
     const coverImage = result?.galleryImages[0];
-    const mobileCoverImage = result?.modalImages[0];
+    const mobileCoverImage = result?.galleryMobileImage;
     if (!result || !coverImage || !mobileCoverImage) return null;
 
     return {

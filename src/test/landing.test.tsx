@@ -196,6 +196,10 @@ describe("landing", () => {
       "src",
       expect.stringContaining("abdominoplastia-01")
     );
+    expect(within(dialog).getByRole("img", { name: /abdominoplastia/i })).not.toHaveAttribute(
+      "src",
+      expect.stringContaining("/t_mobile/")
+    );
     expect(within(dialog).queryByText(/mamoplastia/i)).not.toBeInTheDocument();
     expect(within(dialog).getByText(/1 \/ 3/i)).toBeInTheDocument();
   });
@@ -247,29 +251,30 @@ describe("landing", () => {
 
     const slides = gallery.querySelectorAll("[data-gallery-slide]");
     expect(slides.length).toBe(3);
-    expect(gallery.querySelector('[data-result-id="mamoplastia-aumento"] img')).toHaveAttribute(
-      "src",
-      expect.stringContaining("mamoplastia-01_32")
-    );
-    expect(gallery.querySelector('[data-result-id="abdominoplastia"] img')).toHaveAttribute(
-      "src",
-      expect.stringContaining("abdominoplastia-01_32")
-    );
-    expect(gallery.querySelector('[data-result-id="pexia-protesis"] img')).toHaveAttribute(
-      "src",
-      expect.stringContaining("pex-01_32")
-    );
+    const mamoplastiaDesktopPreview = gallery.querySelector('[data-result-id="mamoplastia-aumento"] img');
+    const abdominoplastiaDesktopPreview = gallery.querySelector('[data-result-id="abdominoplastia"] img');
+    const pexiaDesktopPreview = gallery.querySelector('[data-result-id="pexia-protesis"] img');
+
+    expect(mamoplastiaDesktopPreview).toHaveAttribute("src", expect.stringContaining("/t_optimize/"));
+    expect(mamoplastiaDesktopPreview).toHaveAttribute("src", expect.stringContaining("mamoplastia-01_32"));
+    expect(abdominoplastiaDesktopPreview).toHaveAttribute("src", expect.stringContaining("/t_optimize/"));
+    expect(abdominoplastiaDesktopPreview).toHaveAttribute("src", expect.stringContaining("abdominoplastia-01_32"));
+    expect(pexiaDesktopPreview).toHaveAttribute("src", expect.stringContaining("/t_optimize/"));
+    expect(pexiaDesktopPreview).toHaveAttribute("src", expect.stringContaining("pex-01_32"));
+
+    const mamoplastiaMobilePreview = gallery.querySelector('[data-result-id="mamoplastia-aumento"] source');
+    const abdominoplastiaMobilePreview = gallery.querySelector('[data-result-id="abdominoplastia"] source');
+    const pexiaMobilePreview = gallery.querySelector('[data-result-id="pexia-protesis"] source');
+
+    expect(mamoplastiaMobilePreview).toHaveAttribute("srcset", expect.stringContaining("/t_mobile/"));
+    expect(mamoplastiaMobilePreview).toHaveAttribute("srcset", expect.stringContaining("mamoplastia-01_llctwx"));
+    expect(abdominoplastiaMobilePreview).toHaveAttribute("srcset", expect.stringContaining("/t_mobile/"));
+    expect(abdominoplastiaMobilePreview).toHaveAttribute("srcset", expect.stringContaining("abdominoplastia-01_fatsey"));
+    expect(pexiaMobilePreview).toHaveAttribute("srcset", expect.stringContaining("/t_mobile/"));
+    expect(pexiaMobilePreview).toHaveAttribute("srcset", expect.stringContaining("pex-01_vdffzs"));
     expect(
-      gallery.querySelector('[data-result-id="mamoplastia-aumento"] source')
-    ).toHaveAttribute("srcset", expect.stringContaining("mamoplastia-01_llctwx"));
-    expect(gallery.querySelector('[data-result-id="abdominoplastia"] source')).toHaveAttribute(
-      "srcset",
-      expect.stringContaining("abdominoplastia-01_fatsey")
-    );
-    expect(gallery.querySelector('[data-result-id="pexia-protesis"] source')).toHaveAttribute(
-      "srcset",
-      expect.stringContaining("pex-01_vdffzs")
-    );
+      gallery.querySelector('[data-result-id="mamoplastia-aumento"] source')?.getAttribute("srcset")
+    ).not.toContain("/t_optimize/");
     expect(within(gallery as HTMLElement).queryByText(/rinoplastia/i)).not.toBeInTheDocument();
     expect(within(gallery as HTMLElement).queryByText(/liposucci/i)).not.toBeInTheDocument();
     expect(within(gallery as HTMLElement).queryByText(/espacio reservado/i)).not.toBeInTheDocument();

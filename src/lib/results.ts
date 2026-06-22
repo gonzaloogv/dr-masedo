@@ -9,6 +9,7 @@ export type ResultSet = {
   procedure: string;
   serviceTitles: string[];
   galleryImages: ResultImage[];
+  galleryMobileImage: ResultImage;
   modalImages: ResultImage[];
 };
 
@@ -50,6 +51,10 @@ export const RESULT_SETS: ResultSet[] = [
         alt: "Resultado de mamoplastia de aumento caso 4 por el Dr. Masedo Carlos Dante",
       },
     ],
+    galleryMobileImage: {
+      src: "https://res.cloudinary.com/dz9tuwczf/image/upload/t_mobile/f_auto/q_auto/mamoplastia-01_llctwx.png",
+      alt: "Resultado de mamoplastia de aumento caso 1 por el Dr. Masedo Carlos Dante",
+    },
     modalImages: [
       {
         src: "https://res.cloudinary.com/dz9tuwczf/image/upload/t_optimize/mamoplastia-01_llctwx.png",
@@ -88,6 +93,10 @@ export const RESULT_SETS: ResultSet[] = [
         alt: "Resultado de abdominoplastia caso 3 por el Dr. Masedo Carlos Dante",
       },
     ],
+    galleryMobileImage: {
+      src: "https://res.cloudinary.com/dz9tuwczf/image/upload/t_mobile/f_auto/q_auto/abdominoplastia-01_fatsey.webp",
+      alt: "Resultado de abdominoplastia caso 1 por el Dr. Masedo Carlos Dante",
+    },
     modalImages: [
       {
         src: "https://res.cloudinary.com/dz9tuwczf/image/upload/v1782017837/abdominoplastia-01_fatsey.webp",
@@ -118,6 +127,10 @@ export const RESULT_SETS: ResultSet[] = [
         alt: "Resultado de pexia mas protesis caso 2 por el Dr. Masedo Carlos Dante",
       },
     ],
+    galleryMobileImage: {
+      src: "https://res.cloudinary.com/dz9tuwczf/image/upload/t_mobile/f_auto/q_auto/pex-01_vdffzs.png",
+      alt: "Resultado de pexia mas protesis caso 1 por el Dr. Masedo Carlos Dante",
+    },
     modalImages: [
       {
         src: "https://res.cloudinary.com/dz9tuwczf/image/upload/t_optimize/pex-01_vdffzs.png",
