@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type MouseEvent as ReactMouseEvent,
+  type PointerEvent as ReactPointerEvent,
+  type ReactNode,
+} from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
 import { Reveal } from "@/components/Reveal";
 import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock";
@@ -30,7 +39,21 @@ type GallerySlide = {
 };
 
 const AUTOPLAY_DELAY = 4000;
+const DRAG_AXIS_THRESHOLD = 6;
+const DRAG_CLICK_THRESHOLD = 8;
+const DRAG_DISTANCE_THRESHOLD = 48;
+const DRAG_VELOCITY_THRESHOLD = 0.25;
 const RESULT_ORDER = ["mamoplastia-aumento", "abdominoplastia", "pexia-protesis"];
+
+type DragState = {
+  pointerId: number;
+  startX: number;
+  startY: number;
+  startTime: number;
+  axis: "x" | "y" | null;
+  hasDragged: boolean;
+  hasCaptured: boolean;
+};
 
 function buildSlides(): GallerySlide[] {
   return RESULT_ORDER.map((resultId) => {
@@ -58,6 +81,8 @@ export function Gallery({ resultRequest }: GalleryProps) {
   const [modal, setModal] = useState<ModalState | null>(null);
   const [isInView, setIsInView] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragOffset, setDragOffset] = useState(0);
   const [reducedMotion, setReducedMotion] = useState(false);
 
   const sectionRef = useRef<HTMLElement | null>(null);
@@ -65,6 +90,9 @@ export function Gallery({ resultRequest }: GalleryProps) {
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const lastFocusedRef = useRef<HTMLElement | null>(null);
   const preloadedModalImagesRef = useRef<Set<string>>(new Set());
+  const dragStateRef = useRef<DragState | null>(null);
+  const suppressSlideClickRef = useRef(false);
+  const suppressSlideClickTimerRef = useRef<number | null>(null);
 
   useBodyScrollLock(Boolean(modal));
 
@@ -76,11 +104,35 @@ export function Gallery({ resultRequest }: GalleryProps) {
     setActiveIndex((current) => (current + 1) % slides.length);
   }, [slides.length]);
 
+  const suppressSlideClickBriefly = useCallback(() => {
+    suppressSlideClickRef.current = true;
+    if (suppressSlideClickTimerRef.current) {
+      window.clearTimeout(suppressSlideClickTimerRef.current);
+    }
+    suppressSlideClickTimerRef.current = window.setTimeout(() => {
+      suppressSlideClickRef.current = false;
+      suppressSlideClickTimerRef.current = null;
+    }, 120);
+  }, []);
+
   const openResult = useCallback((resultId: string, index = 0) => {
     lastFocusedRef.current =
       document.activeElement instanceof HTMLElement ? document.activeElement : null;
     setModal({ resultId, index });
   }, []);
+
+  const handleSlideClick = useCallback(
+    (event: ReactMouseEvent<HTMLButtonElement>, resultId: string) => {
+      if (suppressSlideClickRef.current) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+
+      openResult(resultId, 0);
+    },
+    [openResult]
+  );
 
   const close = useCallback(() => {
     setModal(null);
@@ -102,6 +154,116 @@ export function Gallery({ resultRequest }: GalleryProps) {
       return { ...current, index };
     });
   }, []);
+
+  const handleGalleryPointerDown = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      if (modal || slides.length <= 1) return;
+      if (event.isPrimary === false) return;
+      if (event.pointerType === "mouse" && event.button !== 0) return;
+
+      dragStateRef.current = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        startTime: Date.now(),
+        axis: null,
+        hasDragged: false,
+        hasCaptured: false,
+      };
+      setIsDragging(true);
+      setDragOffset(0);
+    },
+    [modal, slides.length]
+  );
+
+  const handleGalleryPointerMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    const dragState = dragStateRef.current;
+    if (!dragState || dragState.pointerId !== event.pointerId) return;
+
+    const deltaX = event.clientX - dragState.startX;
+    const deltaY = event.clientY - dragState.startY;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+
+    if (dragState.axis === null && Math.max(absX, absY) <= DRAG_AXIS_THRESHOLD) {
+      return;
+    }
+
+    if (dragState.axis === null) {
+      dragState.axis = absX >= absY ? "x" : "y";
+    }
+
+    if (dragState.axis === "y") return;
+    if (!dragState.hasCaptured) {
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+      dragState.hasCaptured = true;
+    }
+    if (absX > DRAG_CLICK_THRESHOLD) {
+      dragState.hasDragged = true;
+      suppressSlideClickRef.current = true;
+    }
+
+    event.preventDefault();
+    setDragOffset(deltaX);
+  }, []);
+
+  const handleGalleryPointerUp = useCallback(
+    (event: ReactPointerEvent<HTMLDivElement>) => {
+      const dragState = dragStateRef.current;
+      if (!dragState || dragState.pointerId !== event.pointerId) return;
+
+      try {
+        event.currentTarget.releasePointerCapture?.(event.pointerId);
+      } catch {
+        // Pointer capture can already be gone if the browser cancelled the gesture.
+      }
+
+      dragStateRef.current = null;
+      setIsDragging(false);
+      setDragOffset(0);
+
+      const deltaX = event.clientX - dragState.startX;
+      const elapsed = Math.max(1, Date.now() - dragState.startTime);
+      const velocity = Math.abs(deltaX) / elapsed;
+      const didDrag =
+        dragState.hasDragged ||
+        (dragState.axis !== "y" && Math.abs(deltaX) > DRAG_CLICK_THRESHOLD);
+
+      if (didDrag) {
+        suppressSlideClickBriefly();
+      }
+
+      if (
+        dragState.axis !== "y" &&
+        (Math.abs(deltaX) >= DRAG_DISTANCE_THRESHOLD || velocity >= DRAG_VELOCITY_THRESHOLD)
+      ) {
+        if (deltaX < 0) {
+          goToNextSlide();
+        } else {
+          goToPreviousSlide();
+        }
+      }
+    },
+    [goToNextSlide, goToPreviousSlide, suppressSlideClickBriefly]
+  );
+
+  const handleGalleryPointerCancel = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
+    const dragState = dragStateRef.current;
+    if (!dragState || dragState.pointerId !== event.pointerId) return;
+
+    try {
+      event.currentTarget.releasePointerCapture?.(event.pointerId);
+    } catch {
+      // Pointer capture can already be gone if the browser cancelled the gesture.
+    }
+
+    if (dragState.hasDragged) {
+      suppressSlideClickBriefly();
+    }
+    dragStateRef.current = null;
+    setIsDragging(false);
+    setDragOffset(0);
+  }, [suppressSlideClickBriefly]);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia?.("(prefers-reduced-motion: reduce)");
@@ -132,12 +294,18 @@ export function Gallery({ resultRequest }: GalleryProps) {
     openResult(resultRequest.resultId, 0);
   }, [openResult, resultRequest]);
 
+  useEffect(() => () => {
+    if (suppressSlideClickTimerRef.current) {
+      window.clearTimeout(suppressSlideClickTimerRef.current);
+    }
+  }, []);
+
   useEffect(() => {
-    if (!isInView || isPaused || modal || reducedMotion || slides.length <= 1) return;
+    if (!isInView || isPaused || isDragging || modal || reducedMotion || slides.length <= 1) return;
 
     const interval = window.setInterval(goToNextSlide, AUTOPLAY_DELAY);
     return () => window.clearInterval(interval);
-  }, [goToNextSlide, isInView, isPaused, modal, reducedMotion, slides.length]);
+  }, [goToNextSlide, isDragging, isInView, isPaused, modal, reducedMotion, slides.length]);
 
   useEffect(() => {
     if (!modal) return;
@@ -239,11 +407,23 @@ export function Gallery({ resultRequest }: GalleryProps) {
             onFocus={() => setIsPaused(true)}
             onBlur={() => setIsPaused(false)}
           >
-            <div className="h-full overflow-hidden">
+            <div
+              data-gallery-gesture
+              className="h-full overflow-hidden touch-pan-y cursor-grab active:cursor-grabbing"
+              onPointerDown={handleGalleryPointerDown}
+              onPointerMove={handleGalleryPointerMove}
+              onPointerUp={handleGalleryPointerUp}
+              onPointerCancel={handleGalleryPointerCancel}
+            >
               <div
                 data-carousel-track
-                className="flex h-full transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]"
-                style={{ transform: `translateX(-${activeIndex * 100}%)` }}
+                className={[
+                  "flex h-full",
+                  isDragging
+                    ? ""
+                    : "transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]",
+                ].join(" ")}
+                style={{ transform: `translateX(calc(-${activeIndex * 100}% + ${dragOffset}px))` }}
               >
                 {slides.map((slide, index) => {
                   const isActiveSlide = index === activeIndex;
@@ -257,7 +437,7 @@ export function Gallery({ resultRequest }: GalleryProps) {
                     tabIndex={isActiveSlide ? 0 : -1}
                     aria-hidden={!isActiveSlide}
                     className="group relative h-full min-w-full overflow-hidden text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-sage"
-                    onClick={() => openResult(slide.resultId, 0)}
+                    onClick={(event) => handleSlideClick(event, slide.resultId)}
                     aria-label={`${slide.label} - ${slide.procedure}`}
                   >
                     <picture className="block h-full w-full">

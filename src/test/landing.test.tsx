@@ -300,6 +300,134 @@ describe("landing", () => {
     expect(screen.getByRole("dialog", { name: /mamoplastia de aumento/i })).toBeInTheDocument();
   });
 
+  it("keeps desktop gallery clicks free of pointer capture until drag starts", () => {
+    const { container } = render(<App />);
+    const gallery = container.querySelector("#galeria");
+    expect(gallery).toBeInTheDocument();
+    if (!gallery) return;
+
+    const gestureSurface = gallery.querySelector<HTMLElement>("[data-gallery-gesture]");
+    const firstSlide = gallery.querySelector<HTMLButtonElement>("[data-gallery-slide]");
+    expect(gestureSurface).toBeInTheDocument();
+    expect(firstSlide).toBeInTheDocument();
+    if (!gestureSurface || !firstSlide) return;
+
+    const setPointerCapture = vi.fn();
+    Object.defineProperty(gestureSurface, "setPointerCapture", {
+      configurable: true,
+      value: setPointerCapture,
+    });
+
+    const event = new MouseEvent("pointerdown", {
+      bubbles: true,
+      cancelable: true,
+      button: 0,
+      clientX: 160,
+      clientY: 120,
+    });
+
+    Object.defineProperties(event, {
+      isPrimary: { value: true },
+      pointerId: { value: 1 },
+      pointerType: { value: "mouse" },
+    });
+
+    fireEvent(gestureSurface, event);
+    expect(setPointerCapture).not.toHaveBeenCalled();
+
+    fireEvent.click(firstSlide);
+    expect(screen.getByRole("dialog", { name: /mamoplastia de aumento/i })).toBeInTheDocument();
+  });
+
+  it("supports gallery swipe and mouse drag without opening the modal", () => {
+    const { container } = render(<App />);
+    const gallery = container.querySelector("#galeria");
+    expect(gallery).toBeInTheDocument();
+    if (!gallery) return;
+
+    const gestureSurface = gallery.querySelector("[data-gallery-gesture]");
+    const slides = Array.from(gallery.querySelectorAll<HTMLButtonElement>("[data-gallery-slide]"));
+    expect(gestureSurface).toBeInTheDocument();
+    expect(slides).toHaveLength(3);
+    if (!gestureSurface) return;
+
+    const fireCarouselPointer = (
+      type: "pointerdown" | "pointermove" | "pointerup",
+      options: {
+        pointerId: number;
+        pointerType: "mouse" | "touch";
+        clientX: number;
+        clientY: number;
+        button?: number;
+      }
+    ) => {
+      const event = new MouseEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        clientX: options.clientX,
+        clientY: options.clientY,
+        button: options.button ?? 0,
+      });
+
+      Object.defineProperties(event, {
+        isPrimary: { value: true },
+        pointerId: { value: options.pointerId },
+        pointerType: { value: options.pointerType },
+      });
+
+      fireEvent(gestureSurface, event);
+    };
+
+    fireCarouselPointer("pointerdown", {
+      pointerId: 1,
+      pointerType: "touch",
+      clientX: 220,
+      clientY: 120,
+    });
+    fireCarouselPointer("pointermove", {
+      pointerId: 1,
+      pointerType: "touch",
+      clientX: 120,
+      clientY: 124,
+    });
+    fireCarouselPointer("pointerup", {
+      pointerId: 1,
+      pointerType: "touch",
+      clientX: 120,
+      clientY: 124,
+    });
+    fireEvent.click(slides[0]);
+
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+    expect(slides[0]).toHaveAttribute("tabindex", "-1");
+    expect(slides[1]).toHaveAttribute("tabindex", "0");
+
+    fireCarouselPointer("pointerdown", {
+      pointerId: 2,
+      pointerType: "mouse",
+      button: 0,
+      clientX: 120,
+      clientY: 120,
+    });
+    fireCarouselPointer("pointermove", {
+      pointerId: 2,
+      pointerType: "mouse",
+      button: 0,
+      clientX: 220,
+      clientY: 122,
+    });
+    fireCarouselPointer("pointerup", {
+      pointerId: 2,
+      pointerType: "mouse",
+      button: 0,
+      clientX: 220,
+      clientY: 122,
+    });
+
+    expect(slides[0]).toHaveAttribute("tabindex", "0");
+    expect(slides[1]).toHaveAttribute("tabindex", "-1");
+  });
+
   it("preloads adjacent modal images when a gallery result opens", async () => {
     const originalImage = window.Image;
     const preloadedSources: string[] = [];
