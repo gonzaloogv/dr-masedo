@@ -83,6 +83,8 @@ export function Gallery({ resultRequest }: GalleryProps) {
   const [isPaused, setIsPaused] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState(0);
+  const [isModalDragging, setIsModalDragging] = useState(false);
+  const [modalDragOffset, setModalDragOffset] = useState(0);
   const [reducedMotion, setReducedMotion] = useState(false);
 
   const sectionRef = useRef<HTMLElement | null>(null);
@@ -91,6 +93,7 @@ export function Gallery({ resultRequest }: GalleryProps) {
   const lastFocusedRef = useRef<HTMLElement | null>(null);
   const preloadedModalImagesRef = useRef<Set<string>>(new Set());
   const dragStateRef = useRef<DragState | null>(null);
+  const modalDragStateRef = useRef<DragState | null>(null);
   const suppressSlideClickRef = useRef(false);
   const suppressSlideClickTimerRef = useRef<number | null>(null);
 
@@ -264,6 +267,108 @@ export function Gallery({ resultRequest }: GalleryProps) {
     setIsDragging(false);
     setDragOffset(0);
   }, [suppressSlideClickBriefly]);
+
+  const handleModalPointerDown = useCallback(
+    (event: ReactPointerEvent<HTMLImageElement>) => {
+      if (!modal) return;
+      if (event.isPrimary === false) return;
+      if (event.pointerType === "mouse" && event.button !== 0) return;
+
+      const result = getResultSetById(modal.resultId);
+      if ((result?.modalImages.length ?? 0) <= 1) return;
+
+      modalDragStateRef.current = {
+        pointerId: event.pointerId,
+        startX: event.clientX,
+        startY: event.clientY,
+        startTime: Date.now(),
+        axis: null,
+        hasDragged: false,
+        hasCaptured: false,
+      };
+      setIsModalDragging(true);
+      setModalDragOffset(0);
+    },
+    [modal]
+  );
+
+  const handleModalPointerMove = useCallback((event: ReactPointerEvent<HTMLImageElement>) => {
+    const dragState = modalDragStateRef.current;
+    if (!dragState || dragState.pointerId !== event.pointerId) return;
+
+    const deltaX = event.clientX - dragState.startX;
+    const deltaY = event.clientY - dragState.startY;
+    const absX = Math.abs(deltaX);
+    const absY = Math.abs(deltaY);
+
+    if (dragState.axis === null && Math.max(absX, absY) <= DRAG_AXIS_THRESHOLD) {
+      return;
+    }
+
+    if (dragState.axis === null) {
+      dragState.axis = absX >= absY ? "x" : "y";
+    }
+
+    if (dragState.axis === "y") return;
+    if (!dragState.hasCaptured) {
+      event.currentTarget.setPointerCapture?.(event.pointerId);
+      dragState.hasCaptured = true;
+    }
+    if (absX > DRAG_CLICK_THRESHOLD) {
+      dragState.hasDragged = true;
+    }
+
+    event.preventDefault();
+    setModalDragOffset(deltaX);
+  }, []);
+
+  const handleModalPointerUp = useCallback(
+    (event: ReactPointerEvent<HTMLImageElement>) => {
+      const dragState = modalDragStateRef.current;
+      if (!dragState || dragState.pointerId !== event.pointerId) return;
+
+      try {
+        event.currentTarget.releasePointerCapture?.(event.pointerId);
+      } catch {
+        // Pointer capture can already be gone if the browser cancelled the gesture.
+      }
+
+      modalDragStateRef.current = null;
+      setIsModalDragging(false);
+      setModalDragOffset(0);
+
+      const deltaX = event.clientX - dragState.startX;
+      const elapsed = Math.max(1, Date.now() - dragState.startTime);
+      const velocity = Math.abs(deltaX) / elapsed;
+      const didDrag =
+        dragState.hasDragged ||
+        (dragState.axis !== "y" && Math.abs(deltaX) > DRAG_CLICK_THRESHOLD);
+
+      if (
+        dragState.axis !== "y" &&
+        didDrag &&
+        (Math.abs(deltaX) >= DRAG_DISTANCE_THRESHOLD || velocity >= DRAG_VELOCITY_THRESHOLD)
+      ) {
+        navigateModal(deltaX < 0 ? "next" : "prev");
+      }
+    },
+    [navigateModal]
+  );
+
+  const handleModalPointerCancel = useCallback((event: ReactPointerEvent<HTMLImageElement>) => {
+    const dragState = modalDragStateRef.current;
+    if (!dragState || dragState.pointerId !== event.pointerId) return;
+
+    try {
+      event.currentTarget.releasePointerCapture?.(event.pointerId);
+    } catch {
+      // Pointer capture can already be gone if the browser cancelled the gesture.
+    }
+
+    modalDragStateRef.current = null;
+    setIsModalDragging(false);
+    setModalDragOffset(0);
+  }, []);
 
   useEffect(() => {
     const mediaQuery = window.matchMedia?.("(prefers-reduced-motion: reduce)");
@@ -552,9 +657,21 @@ export function Gallery({ resultRequest }: GalleryProps) {
             </div>
 
             <img
+              data-modal-gesture
               src={activeImage.src}
               alt={activeImage.alt}
-              className="max-h-[72vh] max-w-[88vw] object-contain"
+              className={[
+                "max-h-[72vh] max-w-[88vw] touch-pan-y cursor-grab select-none object-contain active:cursor-grabbing",
+                isModalDragging
+                  ? ""
+                  : "transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]",
+              ].join(" ")}
+              style={{ transform: `translateX(${modalDragOffset}px)` }}
+              draggable={false}
+              onPointerDown={handleModalPointerDown}
+              onPointerMove={handleModalPointerMove}
+              onPointerUp={handleModalPointerUp}
+              onPointerCancel={handleModalPointerCancel}
             />
             <p className="mt-4 max-w-md px-4 text-center font-sans text-xs leading-[1.7] text-white/65">
               Las fotografías se publican con consentimiento informado del paciente. Los resultados

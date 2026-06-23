@@ -478,6 +478,101 @@ describe("landing", () => {
     }
   });
 
+  it("supports modal image swipe and mouse drag between images", () => {
+    const { container } = render(<App />);
+    const firstSlide = container.querySelector<HTMLButtonElement>(
+      '[data-result-id="mamoplastia-aumento"]'
+    );
+    expect(firstSlide).toBeInTheDocument();
+    if (!firstSlide) return;
+
+    fireEvent.click(firstSlide);
+
+    const dialog = screen.getByRole("dialog", { name: /mamoplastia de aumento/i });
+    expect(within(dialog).getByText(/1 \/ 4/i)).toBeInTheDocument();
+
+    const modalGesture = dialog.querySelector("[data-modal-gesture]");
+    expect(modalGesture).toBeInTheDocument();
+    if (!modalGesture) return;
+
+    const fireModalPointer = (
+      type: "pointerdown" | "pointermove" | "pointerup",
+      options: {
+        pointerId: number;
+        pointerType: "mouse" | "touch";
+        clientX: number;
+        clientY: number;
+        button?: number;
+      }
+    ) => {
+      const event = new MouseEvent(type, {
+        bubbles: true,
+        cancelable: true,
+        clientX: options.clientX,
+        clientY: options.clientY,
+        button: options.button ?? 0,
+      });
+
+      Object.defineProperties(event, {
+        isPrimary: { value: true },
+        pointerId: { value: options.pointerId },
+        pointerType: { value: options.pointerType },
+      });
+
+      fireEvent(modalGesture, event);
+    };
+
+    fireModalPointer("pointerdown", {
+      pointerId: 1,
+      pointerType: "touch",
+      clientX: 220,
+      clientY: 120,
+    });
+    fireModalPointer("pointermove", {
+      pointerId: 1,
+      pointerType: "touch",
+      clientX: 120,
+      clientY: 124,
+    });
+    fireModalPointer("pointerup", {
+      pointerId: 1,
+      pointerType: "touch",
+      clientX: 120,
+      clientY: 124,
+    });
+
+    expect(within(dialog).getByText(/2 \/ 4/i)).toBeInTheDocument();
+    expect(within(dialog).getByRole("img", { name: /mamoplastia de aumento caso 2/i })).toHaveAttribute(
+      "src",
+      expect.stringContaining("mamoplastia-02")
+    );
+
+    fireModalPointer("pointerdown", {
+      pointerId: 2,
+      pointerType: "mouse",
+      button: 0,
+      clientX: 120,
+      clientY: 120,
+    });
+    fireModalPointer("pointermove", {
+      pointerId: 2,
+      pointerType: "mouse",
+      button: 0,
+      clientX: 220,
+      clientY: 122,
+    });
+    fireModalPointer("pointerup", {
+      pointerId: 2,
+      pointerType: "mouse",
+      button: 0,
+      clientX: 220,
+      clientY: 122,
+    });
+
+    expect(within(dialog).getByText(/1 \/ 4/i)).toBeInTheDocument();
+    expect(screen.getByRole("dialog", { name: /mamoplastia de aumento/i })).toBeInTheDocument();
+  });
+
   it("locks page scroll while the mobile menu or gallery modal is open", () => {
     const { container } = render(<App />);
 
