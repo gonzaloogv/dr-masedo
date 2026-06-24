@@ -4,6 +4,7 @@ import {
   useMemo,
   useRef,
   useState,
+  type CSSProperties,
   type PointerEvent as ReactPointerEvent,
 } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
@@ -60,7 +61,7 @@ type GalleryViewState = "open" | "selecting" | "selected" | "closing" | "restori
 
 const DRAG_THRESHOLD_PX = 36;
 const TAP_TOLERANCE_PX = 8;
-const GALLERY_SELECT_SETTLE_MS = 80;
+const GALLERY_SELECT_SETTLE_MS = 190;
 const GALLERY_CLOSE_TRANSITION_MS = 260;
 const GALLERY_RESTORE_SETTLE_MS = 80;
 const GALLERY_CATALOGS: GalleryCatalog[] = [
@@ -102,12 +103,24 @@ const GALLERY_CATALOGS: GalleryCatalog[] = [
         description: "Resultados disponibles solo con consentimiento.",
       },
       {
+        title: "Otoplastia",
+        description: "Correccion de orejas prominentes o asimetricas.",
+      },
+      {
         title: "Blefaroplastia",
         description: "Tratamiento del exceso cutaneo palpebral.",
       },
       {
-        title: "Lifting facial",
+        title: "Lifting",
         description: "Planificacion personalizada de rejuvenecimiento.",
+      },
+      {
+        title: "Cirugia maxilofacial",
+        description: "Correccion funcional y estetica de estructuras faciales.",
+      },
+      {
+        title: "Cirugia de pomulos",
+        description: "Volumen y proyeccion del tercio medio facial.",
       },
     ],
   },
@@ -135,6 +148,10 @@ const GALLERY_CATALOGS: GalleryCatalog[] = [
         title: "Aumento de gluteos",
         description: "Procedimiento sujeto a evaluacion anatomica.",
       },
+      {
+        title: "Dermolipectomia",
+        description: "Tratamiento del exceso de piel y grasa por zonas.",
+      },
     ],
   },
   {
@@ -146,10 +163,6 @@ const GALLERY_CATALOGS: GalleryCatalog[] = [
       {
         title: "Ginecomastia",
         description: "Correccion de volumen mamario masculino.",
-      },
-      {
-        title: "Marcacion abdominal",
-        description: "Definicion corporal segun contextura y objetivo.",
       },
     ],
   },
@@ -163,9 +176,101 @@ const GALLERY_CATALOGS: GalleryCatalog[] = [
         title: "Implante capilar",
         description: "Planificacion por zona, densidad y evolucion.",
       },
+    ],
+  },
+  {
+    id: "medicina-estetica",
+    name: "Medicina estetica",
+    eyebrow: "Procedimientos no quirurgicos",
+    description: "Recursos faciales y corporales de medicina estetica.",
+    services: [
       {
-        title: "Tratamientos capilares",
-        description: "Seguimiento medico segun diagnostico.",
+        title: "Acido hialuronico",
+        description: "Rellenos dermicos para volumen, hidratacion y armonia.",
+      },
+      {
+        title: "Botox",
+        description: "Tratamiento de lineas dinamicas de expresion.",
+      },
+      {
+        title: "Flebologia",
+        description: "Abordaje de varices y aranas vasculares.",
+      },
+      {
+        title: "Plasma Rico en Plaquetas",
+        description: "Bioestimulacion con factores de crecimiento propios.",
+      },
+      {
+        title: "Rinomodelacion",
+        description: "Correccion no quirurgica del perfil nasal.",
+      },
+      {
+        title: "HIFU",
+        description: "Reafirmacion cutanea con ultrasonido focalizado.",
+      },
+      {
+        title: "Rejuvenecimiento facial",
+        description: "Plan integral para textura, firmeza y luminosidad.",
+      },
+      {
+        title: "Hilos tensores",
+        description: "Tension y reposicionamiento facial sin cirugia.",
+      },
+      {
+        title: "Eliminacion de ojeras",
+        description: "Correccion de surcos y ojeras segun indicacion.",
+      },
+      {
+        title: "Medicina Ortomolecular",
+        description: "Tratamiento nutricional y bienestar celular.",
+      },
+      {
+        title: "Blefaroplastia sin cirugia",
+        description: "Mejora del contorno ocular sin bisturi.",
+      },
+      {
+        title: "Rellenos faciales",
+        description: "Modelado facial con rellenos en zonas seleccionadas.",
+      },
+    ],
+  },
+  {
+    id: "piel-laser",
+    name: "Piel y laser",
+    eyebrow: "Belleza y dermatologia",
+    description: "Tratamientos de piel, laser y calidad cutanea.",
+    services: [
+      {
+        title: "Borrar tatuajes",
+        description: "Eliminacion laser de tatuajes segun pigmento y zona.",
+      },
+      {
+        title: "Tratamiento para estrias",
+        description: "Protocolos para mejorar estrias segun extension.",
+      },
+      {
+        title: "Mesoterapia",
+        description: "Microinyecciones para revitalizar y nutrir la piel.",
+      },
+      {
+        title: "Tratamiento de celulitis",
+        description: "Tratamientos combinados para celulitis localizada.",
+      },
+      {
+        title: "Depilacion laser",
+        description: "Reduccion progresiva del vello no deseado.",
+      },
+      {
+        title: "Microdermoabrasion",
+        description: "Exfoliacion mecanica para textura, manchas y poros.",
+      },
+      {
+        title: "Peeling",
+        description: "Renovacion cutanea con acidos seleccionados.",
+      },
+      {
+        title: "Eliminar cicatrices",
+        description: "Tratamiento de cicatrices segun tipo y profundidad.",
       },
     ],
   },
@@ -187,6 +292,10 @@ function getCatalogCover(catalog: GalleryCatalog) {
 
   return {
     desktop: result?.galleryMobileImage ?? image,
+    tablet: {
+      ...image,
+      src: withCloudinaryTransform(image.src, "t_acotado"),
+    },
     mobile: image,
   };
 }
@@ -203,6 +312,60 @@ function getCatalogTone(index: number) {
   return tones[index % tones.length];
 }
 
+function getServiceGridLayout(serviceCount: number) {
+  if (serviceCount <= 6) {
+    return { columns: 3, rows: 2, cells: 6 };
+  }
+
+  if (serviceCount <= 8) {
+    return { columns: 4, rows: 2, cells: 8 };
+  }
+
+  if (serviceCount <= 9) {
+    return { columns: 3, rows: 3, cells: 9 };
+  }
+
+  const rows = Math.ceil(serviceCount / 4);
+
+  return { columns: 4, rows, cells: rows * 4 };
+}
+
+function withCloudinaryTransform(src: string, transformation: string) {
+  const uploadMarker = "/image/upload/";
+  const uploadIndex = src.indexOf(uploadMarker);
+
+  if (uploadIndex === -1) {
+    return src;
+  }
+
+  const prefixEnd = uploadIndex + uploadMarker.length;
+  const prefix = src.slice(0, prefixEnd);
+  const parts = src.slice(prefixEnd).split("/");
+
+  if (parts[0]?.startsWith("t_")) {
+    parts[0] = transformation;
+    return `${prefix}${parts.join("/")}`;
+  }
+
+  return `${prefix}${transformation}/${parts.join("/")}`;
+}
+
+function getServicePreview(result: ResultSet | null) {
+  const image = result?.galleryImages[0];
+
+  if (!image) {
+    return null;
+  }
+
+  return {
+    desktop: image,
+    tablet: {
+      ...image,
+      src: withCloudinaryTransform(image.src, "t_acotado"),
+    },
+  };
+}
+
 export function Gallery({ resultRequest }: GalleryProps) {
   const [selectedCatalogId, setSelectedCatalogId] = useState<string | null>(null);
   const [galleryViewState, setGalleryViewState] = useState<GalleryViewState>("open");
@@ -213,6 +376,7 @@ export function Gallery({ resultRequest }: GalleryProps) {
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
   const modalDragStateRef = useRef<DragState | null>(null);
   const galleryTransitionTimersRef = useRef<number[]>([]);
+  const galleryStageRef = useRef<HTMLDivElement | null>(null);
   const [modalDragOffset, setModalDragOffset] = useState(0);
 
   const selectedCatalog = useMemo(
@@ -234,7 +398,9 @@ export function Gallery({ resultRequest }: GalleryProps) {
   const catalogPanelState = galleryViewState === "closing" ? "closing" : isSelectedLayout ? "collapsed" : "open";
   const servicesPanelState =
     galleryViewState === "closing" ? "closing" : galleryViewState === "selected" ? "open" : "closed";
-  const servicesCatalog = servicesPanelState === "closed" ? null : selectedCatalog;
+  const servicesCatalog = isSelectedLayout ? selectedCatalog : null;
+  const areServicesInteractive = servicesPanelState === "open";
+  const serviceGridLayout = servicesCatalog ? getServiceGridLayout(servicesCatalog.services.length) : null;
 
   useBodyScrollLock(Boolean(modal));
 
@@ -405,6 +571,12 @@ export function Gallery({ resultRequest }: GalleryProps) {
     setGalleryViewState("selecting");
     setHoveredCatalogId(null);
 
+    if (window.innerWidth < 768) {
+      window.requestAnimationFrame(() => {
+        galleryStageRef.current?.scrollIntoView({ behavior: "auto", block: "start" });
+      });
+    }
+
     const selectTimer = window.setTimeout(() => {
       setGalleryViewState("selected");
     }, GALLERY_SELECT_SETTLE_MS);
@@ -546,6 +718,7 @@ export function Gallery({ resultRequest }: GalleryProps) {
 
         <Reveal className="mt-12">
           <div
+            ref={galleryStageRef}
             className={`grid transition-[gap] duration-[450ms] ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none ${
               isSelectedLayout ? "gap-5 lg:grid-cols-[minmax(210px,280px)_1fr] lg:items-stretch" : "gap-0"
             }`}
@@ -553,8 +726,8 @@ export function Gallery({ resultRequest }: GalleryProps) {
             data-state={galleryViewState}
           >
             <div
-              className={`flex flex-col overflow-hidden opacity-100 transition-[max-height,opacity,transform,gap] duration-[450ms] ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none lg:h-[460px] lg:max-h-none lg:flex-row lg:gap-2 ${
-                isSelectedLayout ? "max-h-[260px] gap-0" : "max-h-[1400px] gap-3"
+              className={`flex flex-col overflow-hidden opacity-100 transition-[max-height,opacity,transform,gap] duration-[450ms] ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none lg:h-[540px] lg:max-h-none lg:flex-row lg:gap-2 ${
+                isSelectedLayout ? "max-h-[260px] gap-0" : "max-h-[2000px] gap-3"
               }`}
               data-gallery-catalogs
               data-gallery-mobile-collapse
@@ -612,22 +785,34 @@ export function Gallery({ resultRequest }: GalleryProps) {
 
             <div
               aria-hidden={servicesPanelState === "open" ? undefined : true}
-              className={`grid overflow-hidden transition-[grid-template-rows,max-height,opacity,transform] duration-[420ms] ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none ${
+              className={`grid overflow-hidden transition-[opacity,transform] duration-[420ms] ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none md:transition-[grid-template-rows,max-height,opacity,transform] ${
                 servicesPanelState === "open"
-                  ? "grid-rows-[1fr] max-h-[1200px] translate-y-0 opacity-100"
+                  ? "grid-rows-[1fr] max-h-[3200px] translate-y-0 opacity-100 md:max-h-[1200px]"
                   : servicesPanelState === "closing"
-                    ? "pointer-events-none grid-rows-[0fr] max-h-[1200px] translate-y-1 opacity-0"
+                    ? "pointer-events-none grid-rows-[0fr] max-h-[3200px] translate-y-1 opacity-0 md:max-h-[1200px]"
                     : "pointer-events-none grid-rows-[0fr] max-h-0 translate-y-3 opacity-0"
               }`}
               data-gallery-services
               data-state={servicesPanelState}
             >
               <div className="min-h-0 overflow-hidden">
-                {servicesCatalog ? (
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {servicesCatalog.services.map((service) => (
+                {servicesCatalog && serviceGridLayout ? (
+                  <div
+                    className="grid grid-cols-2 gap-3 md:h-[540px] md:grid-cols-[repeat(var(--gallery-service-cols),minmax(0,1fr))] md:grid-rows-[repeat(var(--gallery-service-rows),minmax(0,1fr))] lg:h-[540px]"
+                    data-gallery-service-cells={serviceGridLayout.cells}
+                    data-gallery-services-grid
+                    style={
+                      {
+                        "--gallery-service-cols": String(serviceGridLayout.columns),
+                        "--gallery-service-rows": String(serviceGridLayout.rows),
+                      } as CSSProperties
+                    }
+                  >
+                    {servicesCatalog.services.map((service, index) => (
                       <ServiceCard
                         key={service.title}
+                        index={index}
+                        isVisible={areServicesInteractive}
                         service={service}
                         onClick={() => handleServiceSelect(servicesCatalog, service)}
                       />
@@ -805,6 +990,7 @@ function CatalogCard({
   const isHiddenInSelectedMode = isSelectedMode && !isSelected;
   const isRestoringHidden = isRestoring && !isReturning;
   const isSelectingHidden = isSelecting && isHiddenInSelectedMode;
+  const selectMotionState = isSelecting ? (isSelected ? "anchor" : "exiting") : undefined;
   const mobileState = isSelectedMode && !isSelected ? "hidden" : "visible";
   const desktopFlexClass = isHiddenInSelectedMode
     ? "lg:w-0 lg:flex-none"
@@ -816,11 +1002,16 @@ function CatalogCard({
     : "hover:-translate-y-0.5 hover:border-sage/60";
   const transitionClass = isRestoring
     ? "transition-[opacity,border-color,transform,filter] duration-[220ms]"
-    : isSelectingHidden
-      ? "transition-[max-height,opacity,border-color,transform,filter] duration-[260ms]"
+    : isSelecting
+      ? "transition-[max-height,opacity,border-color,transform,filter] duration-[300ms]"
     : "transition-[max-height,flex,filter,opacity,transform,border-color,width] duration-[420ms]";
+  const selectMotionClass = isSelecting
+    ? isSelected
+      ? "lg:-translate-x-5 lg:scale-[0.992]"
+      : "lg:translate-x-6"
+    : "";
   const visibilityClass = isHiddenInSelectedMode
-    ? "max-h-0 min-h-0 basis-0 border-0 opacity-0 pointer-events-none lg:max-h-0 lg:min-h-0"
+    ? "h-0 max-h-0 !min-h-0 basis-0 border-0 opacity-0 pointer-events-none lg:h-full lg:max-h-0 lg:!min-h-0"
     : isRestoringHidden
       ? "max-h-[260px] opacity-0 pointer-events-none lg:max-h-none"
       : "max-h-[260px] opacity-100 lg:max-h-none";
@@ -831,11 +1022,12 @@ function CatalogCard({
       aria-label={catalog.name}
       aria-expanded={isSelectedMode && isSelected ? true : undefined}
       aria-hidden={isHiddenInSelectedMode || isRestoringHidden ? true : undefined}
-      className={`group relative flex min-h-11 shrink-0 aspect-[3/2] overflow-hidden border border-sage/25 bg-darker/40 text-left shadow-card-soft outline-none ${transitionClass} ease-[cubic-bezier(0.23,1,0.32,1)] ${interactionClass} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-sage lg:aspect-[3/4] lg:h-full lg:min-h-11 lg:border ${visibilityClass} ${desktopFlexClass}`}
+      className={`group relative flex min-h-11 shrink-0 aspect-[3/2] overflow-hidden border border-sage/25 bg-darker/40 text-left shadow-card-soft outline-none ${transitionClass} ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:translate-x-0 motion-reduce:translate-y-0 motion-reduce:scale-100 ${interactionClass} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-sage lg:aspect-[3/4] lg:h-full lg:min-h-11 lg:border ${selectMotionClass} ${visibilityClass} ${desktopFlexClass}`}
       data-gallery-catalog
       data-gallery-restore-state={
         isRestoring ? (isReturning ? "anchor" : "pending") : undefined
       }
+      data-gallery-select-motion={selectMotionState}
       data-gallery-selected-catalog={isSelectedMode && isSelected ? true : undefined}
       data-mobile-state={mobileState}
       onBlur={onBlur}
@@ -848,6 +1040,8 @@ function CatalogCard({
     >
       {cover ? (
         <picture className="absolute inset-0">
+          <source media="(min-width: 1024px)" srcSet={cover.desktop.src} />
+          <source media="(min-width: 768px)" srcSet={cover.tablet.src} />
           <source media="(max-width: 767px)" srcSet={cover.mobile.src} />
           <img
             alt=""
@@ -865,6 +1059,18 @@ function CatalogCard({
       )}
 
       <span className={`absolute inset-0 bg-gradient-to-t ${getCatalogTone(index)}`} />
+      <span
+        aria-hidden="true"
+        className="absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-darker/95 via-darker/56 to-transparent"
+        data-gallery-bottom-gradient
+      />
+      <span
+        aria-hidden="true"
+        className="absolute right-5 top-5 z-10 bg-copper px-3 py-1 font-sans text-2xs uppercase tracking-[0.14em] text-white lg:bottom-6 lg:right-6 lg:top-auto"
+        data-gallery-service-count
+      >
+        {serviceCount}
+      </span>
       <span className="relative flex min-h-[180px] w-full flex-col justify-end gap-5 p-5 text-white lg:min-h-0 lg:p-6">
         <span className="flex items-center justify-between gap-4">
           <span
@@ -875,9 +1081,6 @@ function CatalogCard({
             }`}
           >
             {catalog.eyebrow}
-          </span>
-          <span className="shrink-0 bg-copper px-3 py-1 font-sans text-2xs uppercase tracking-[0.14em] text-white">
-            {serviceCount}
           </span>
         </span>
         <span className="relative block lg:min-h-[9rem]">
@@ -936,6 +1139,8 @@ function SelectedCatalogCard({ catalog, onClick }: SelectedCatalogCardProps) {
     >
       {cover ? (
         <picture className="absolute inset-0">
+          <source media="(min-width: 1024px)" srcSet={cover.desktop.src} />
+          <source media="(min-width: 768px)" srcSet={cover.tablet.src} />
           <source media="(max-width: 767px)" srcSet={cover.mobile.src} />
           <img
             alt=""
@@ -960,13 +1165,20 @@ function SelectedCatalogCard({ catalog, onClick }: SelectedCatalogCardProps) {
 }
 
 type ServiceCardProps = {
+  index: number;
+  isVisible: boolean;
   service: GalleryService;
   onClick: () => void;
 };
 
-function ServiceCard({ service, onClick }: ServiceCardProps) {
+function ServiceCard({ index, isVisible, service, onClick }: ServiceCardProps) {
   const result = getServiceResult(service);
   const caseCount = result?.modalImages.length ?? 0;
+  const preview = getServicePreview(result);
+  const serviceStateClass = isVisible ? "translate-y-0 opacity-100" : "translate-y-2 opacity-0";
+  const surfaceClass = preview
+    ? "bg-darker/50"
+    : "bg-gradient-to-br from-darker/92 via-dark/78 to-forest-2/48";
 
   return (
     <button
@@ -975,23 +1187,60 @@ function ServiceCard({ service, onClick }: ServiceCardProps) {
           ? `Ver resultados de ${service.title}`
           : `${service.title}. Sin fotos de casos disponibles`
       }
-      className="group flex min-h-11 flex-col justify-between border border-sage/20 bg-darker/45 p-5 text-left shadow-card-soft outline-none transition-[border-color,transform,background-color] duration-300 hover:-translate-y-0.5 hover:border-copper/65 hover:bg-darker/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sage"
+      aria-hidden={isVisible ? undefined : true}
+      className={`group relative flex min-h-[180px] overflow-hidden border border-sage/20 p-4 text-left shadow-card-soft outline-none transition-[border-color,transform,background-color,opacity] duration-[220ms] ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:translate-y-0 motion-reduce:transition-none hover:-translate-y-0.5 hover:border-copper/65 hover:bg-darker/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sage md:min-h-0 lg:p-5 ${surfaceClass} ${serviceStateClass}`}
       data-gallery-service
+      data-gallery-service-has-preview={preview ? true : false}
+      data-gallery-service-position={index + 1}
+      data-gallery-service-state={isVisible ? "open" : "closed"}
       onClick={onClick}
+      style={{ transitionDelay: isVisible ? `${60 + index * 35}ms` : "0ms" }}
+      tabIndex={isVisible ? undefined : -1}
       type="button"
     >
-      <span>
-        <span className="block font-serif text-2xl leading-tight text-white">{service.title}</span>
-        <span className="mt-3 block font-sans text-sm leading-[1.7] text-white/70">
-          {service.description}
+      {preview ? (
+        <picture className="absolute inset-0" data-gallery-service-preview>
+          <source media="(min-width: 1024px)" srcSet={preview.desktop.src} />
+          <source media="(min-width: 768px)" srcSet={preview.tablet.src} />
+          <img
+            alt=""
+            className="h-full w-full object-cover opacity-75 transition-transform duration-500 ease-out group-hover:scale-[1.035]"
+            draggable={false}
+            loading="lazy"
+            src={preview.tablet.src}
+          />
+        </picture>
+      ) : (
+        <span
+          aria-hidden="true"
+          className="absolute inset-0 bg-gradient-to-br from-darker/92 via-dark/78 to-forest-2/48"
+          data-gallery-service-empty-surface
+        />
+      )}
+      <span
+        className="absolute inset-0"
+        data-gallery-service-reading-overlay="gradient"
+        style={{
+          backgroundImage:
+            "linear-gradient(to top, hsl(var(--brand-darker) / 0.96), hsl(var(--brand-darker) / 0.58), hsl(var(--brand-darker) / 0.82))",
+        }}
+      />
+      <span className="relative z-10 flex h-full w-full flex-col justify-between">
+        <span>
+          <span className="block font-serif text-xl leading-tight text-white md:text-lg xl:text-xl">
+            {service.title}
+          </span>
+          <span className="mt-2 block overflow-hidden font-sans text-xs leading-[1.55] text-white/70 md:[-webkit-box-orient:vertical] md:[-webkit-line-clamp:2] md:[display:-webkit-box]">
+            {service.description}
+          </span>
         </span>
-      </span>
-      <span className="mt-8 flex items-center justify-between gap-4 border-t border-sage/15 pt-4 font-sans text-2xs uppercase tracking-[0.16em]">
-        <span className={caseCount > 0 ? "text-sage" : "text-white/50"}>
-          {caseCount > 0 ? `${caseCount} fotos` : "Sin fotos"}
-        </span>
-        <span className="text-copper transition-transform duration-300 group-hover:translate-x-1">
-          Ver
+        <span className="mt-4 flex items-center justify-between gap-4 border-t border-sage/15 pt-3 font-sans text-2xs uppercase tracking-[0.16em]">
+          <span className={caseCount > 0 ? "text-sage" : "text-white/50"}>
+            {caseCount > 0 ? `${caseCount} fotos` : "Sin fotos"}
+          </span>
+          <span className="text-copper transition-transform duration-300 group-hover:translate-x-1">
+            Ver
+          </span>
         </span>
       </span>
     </button>

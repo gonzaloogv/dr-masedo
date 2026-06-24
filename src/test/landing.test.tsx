@@ -235,12 +235,20 @@ describe("landing", () => {
     expect(gallery.querySelector("[data-carousel-track]")).not.toBeInTheDocument();
     expect(gallery.querySelectorAll("[data-gallery-dot]").length).toBe(0);
 
-    ["Mamas", "Rostro", "Cuerpo", "Cirugia masculina", "Capilar"].forEach((label) => {
+    [
+      "Mamas",
+      "Rostro",
+      "Cuerpo",
+      "Cirugia masculina",
+      "Capilar",
+      "Medicina estetica",
+      "Piel y laser",
+    ].forEach((label) => {
       expect(within(gallery).getByRole("button", { name: new RegExp(label, "i") })).toBeInTheDocument();
     });
 
     const catalogCards = gallery.querySelectorAll("[data-gallery-catalog]");
-    expect(catalogCards.length).toBe(5);
+    expect(catalogCards.length).toBe(7);
     catalogCards.forEach((card) => {
       expect(card.className).toContain("min-h-11");
       expect(card.className).toContain("transition-");
@@ -280,20 +288,39 @@ describe("landing", () => {
     expect(catalogPanel).toHaveAttribute("data-state", "open");
     expect(catalogPanel).toHaveAttribute("data-gallery-mobile-collapse", "true");
     expect(catalogPanel?.className).toContain("transition-[max-height,opacity,transform,gap]");
+    expect(catalogPanel?.className).toContain("max-h-[2000px]");
+    expect(catalogPanel?.className).not.toContain("max-h-[1400px]");
+    expect(catalogPanel?.className).toContain("lg:h-[540px]");
     expect(servicesPanel).toHaveAttribute("data-state", "closed");
     expect(servicesPanel?.className).toContain("grid-rows-[0fr]");
 
     const firstCatalog = gallery.querySelector<HTMLElement>("[data-gallery-catalog]");
+    const countBadge = firstCatalog?.querySelector<HTMLElement>("[data-gallery-service-count]");
+    const bottomGradient = firstCatalog?.querySelector<HTMLElement>("[data-gallery-bottom-gradient]");
     const firstCatalogDesktopPreview = firstCatalog?.querySelector<HTMLImageElement>("img");
-    const firstCatalogMobilePreview = firstCatalog?.querySelector<HTMLSourceElement>("source");
+    const firstCatalogSources = Array.from(
+      firstCatalog?.querySelectorAll<HTMLSourceElement>("picture source") ?? []
+    );
     const verticalName = firstCatalog?.querySelector<HTMLElement>("[data-gallery-catalog-name-vertical]");
     const horizontalName = firstCatalog?.querySelector<HTMLElement>("[data-gallery-catalog-name-horizontal]");
     expect(firstCatalog?.className).toContain("aspect-[3/2]");
     expect(firstCatalog?.className).toContain("lg:aspect-[3/4]");
+    expect(countBadge).toBeInTheDocument();
+    expect(countBadge?.textContent).toBe("4");
+    expect(countBadge?.className).toContain("absolute");
+    expect(countBadge?.className).toContain("lg:bottom-6");
+    expect(countBadge?.className).toContain("lg:right-6");
+    expect(bottomGradient).toBeInTheDocument();
+    expect(bottomGradient?.className).toContain("h-2/3");
+    expect(bottomGradient?.className).toContain("from-darker/95");
+    expect(firstCatalogSources[0]).toHaveAttribute("media", "(min-width: 1024px)");
+    expect(firstCatalogSources[0]).toHaveAttribute("srcset", expect.stringContaining("/t_mobile/"));
+    expect(firstCatalogSources[1]).toHaveAttribute("media", "(min-width: 768px)");
+    expect(firstCatalogSources[1]).toHaveAttribute("srcset", expect.stringContaining("/t_acotado/"));
+    expect(firstCatalogSources[2]).toHaveAttribute("media", "(max-width: 767px)");
+    expect(firstCatalogSources[2]).toHaveAttribute("srcset", expect.stringContaining("/t_optimize/"));
     expect(firstCatalogDesktopPreview).toHaveAttribute("src", expect.stringContaining("/t_mobile/"));
     expect(firstCatalogDesktopPreview).toHaveAttribute("src", expect.stringContaining("mamoplastia-01_llctwx"));
-    expect(firstCatalogMobilePreview).toHaveAttribute("srcset", expect.stringContaining("/t_optimize/"));
-    expect(firstCatalogMobilePreview).toHaveAttribute("srcset", expect.stringContaining("mamoplastia-01_32"));
     expect(verticalName).toBeInTheDocument();
     expect(verticalName?.className).toContain("lg:[writing-mode:vertical-rl]");
     expect(verticalName?.className).toContain("lg:rotate-180");
@@ -313,20 +340,60 @@ describe("landing", () => {
     const settlingHiddenCatalogs = Array.from(
       gallery.querySelectorAll<HTMLElement>('[data-mobile-state="hidden"]')
     );
-    expect(settlingHiddenCatalogs.length).toBe(4);
+    expect(settlingHiddenCatalogs.length).toBe(6);
     settlingHiddenCatalogs.forEach((catalog) => {
+      expect(catalog).toHaveAttribute("data-gallery-select-motion", "exiting");
       expect(catalog.className).toContain("transition-[max-height,opacity");
+      expect(catalog.className).toContain("!min-h-0");
+      expect(catalog.className).toContain("h-0");
+      expect(catalog.className).not.toContain("translate-y-2");
+      expect(catalog.className).not.toContain("scale-[0.985]");
+      expect(catalog.className).toContain("lg:translate-x-6");
       expect(catalog.className).not.toContain("transition-[max-height,flex");
+    });
+    expect(gallery.querySelector("[data-gallery-selected-catalog]")).toHaveAttribute(
+      "data-gallery-select-motion",
+      "anchor"
+    );
+    expect(gallery.querySelector("[data-gallery-selected-catalog]")?.className).toContain(
+      "lg:-translate-x-5"
+    );
+    expect(gallery.querySelector("[data-gallery-selected-catalog]")?.className).toContain(
+      "duration-[300ms]"
+    );
+    expect(gallery.querySelectorAll("[data-gallery-service]").length).toBe(4);
+    gallery.querySelectorAll<HTMLButtonElement>("[data-gallery-service]").forEach((service) => {
+      expect(service).toHaveAttribute("data-gallery-service-state", "closed");
+      expect(service).toHaveAttribute("tabindex", "-1");
+      expect(service.className).toContain("translate-y-2");
+      expect(service.className).toContain("opacity-0");
     });
 
     act(() => {
-      vi.advanceTimersByTime(80);
+      vi.advanceTimersByTime(190);
     });
 
     expect(gallery.querySelector("[data-gallery-motion-stage]")).toHaveAttribute("data-state", "selected");
     expect(servicesPanel).toHaveAttribute("data-state", "open");
+    expect(servicesPanel?.className).toContain("transition-[opacity,transform]");
+    expect(servicesPanel?.className).toContain(
+      "md:transition-[grid-template-rows,max-height,opacity,transform]"
+    );
     expect(servicesPanel?.className).toContain("grid-rows-[1fr]");
-    expect(gallery.querySelectorAll('[data-mobile-state="hidden"]').length).toBe(4);
+    expect(servicesPanel?.className).toContain("max-h-[3200px]");
+    expect(servicesPanel?.className).not.toContain("max-h-[2600px]");
+    expect(servicesPanel?.className).toContain("md:max-h-[1200px]");
+    const serviceCards = Array.from(gallery.querySelectorAll<HTMLButtonElement>("[data-gallery-service]"));
+    expect(serviceCards.length).toBe(4);
+    serviceCards.forEach((service) => {
+      expect(service).toHaveAttribute("data-gallery-service-state", "open");
+      expect(service).not.toHaveAttribute("tabindex");
+      expect(service.className).toContain("translate-y-0");
+      expect(service.className).toContain("opacity-100");
+    });
+    expect(serviceCards[0]?.style.transitionDelay).toBe("60ms");
+    expect(serviceCards[1]?.style.transitionDelay).toBe("95ms");
+    expect(gallery.querySelectorAll('[data-mobile-state="hidden"]').length).toBe(6);
     const selectedCatalog = gallery.querySelector<HTMLElement>("[data-gallery-selected-catalog]");
     expect(selectedCatalog).toBeInTheDocument();
     expect(selectedCatalog?.className).toContain("lg:max-h-none");
@@ -344,6 +411,81 @@ describe("landing", () => {
     });
   });
 
+  it("keeps mobile gallery selection anchored when lower catalog cards collapse", () => {
+    const originalInnerWidth = window.innerWidth;
+    const originalRequestAnimationFrame = window.requestAnimationFrame;
+    const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
+    const scrollIntoView = vi.fn();
+
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: 390 });
+    window.requestAnimationFrame = ((callback: FrameRequestCallback) => {
+      callback(0);
+      return 1;
+    }) as typeof window.requestAnimationFrame;
+    HTMLElement.prototype.scrollIntoView = scrollIntoView;
+
+    try {
+      const { container } = render(<App />);
+      const gallery = container.querySelector<HTMLElement>("#galeria");
+      expect(gallery).toBeInTheDocument();
+      if (!gallery) return;
+
+      fireEvent.click(within(gallery).getByRole("button", { name: "Capilar" }));
+
+      expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "auto", block: "start" });
+    } finally {
+      Object.defineProperty(window, "innerWidth", { configurable: true, value: originalInnerWidth });
+      window.requestAnimationFrame = originalRequestAnimationFrame;
+      HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
+      vi.restoreAllMocks();
+    }
+  });
+
+  it("maps service-section procedures into gallery catalogs without gallery-only services", () => {
+    vi.useFakeTimers();
+    try {
+      const { container } = render(<App />);
+      const gallery = container.querySelector<HTMLElement>("#galeria");
+      expect(gallery).toBeInTheDocument();
+      if (!gallery) return;
+
+      const openCatalog = (label: RegExp) => {
+        fireEvent.click(within(gallery).getByRole("button", { name: label }));
+        act(() => {
+          vi.advanceTimersByTime(190);
+        });
+      };
+
+      const closeCatalog = () => {
+        fireEvent.click(gallery.querySelector<HTMLButtonElement>("[data-gallery-selected-catalog]")!);
+        act(() => {
+          vi.advanceTimersByTime(340);
+        });
+      };
+
+      openCatalog(/rostro/i);
+
+      expect(within(gallery).getByRole("button", { name: /otoplastia/i })).toBeInTheDocument();
+      expect(within(gallery).getByRole("button", { name: /cirugia maxilofacial/i })).toBeInTheDocument();
+      expect(within(gallery).getByRole("button", { name: /cirugia de pomulos/i })).toBeInTheDocument();
+      expect(within(gallery).getByRole("button", { name: /lifting/i })).toBeInTheDocument();
+
+      closeCatalog();
+      openCatalog(/cirugia masculina/i);
+
+      expect(within(gallery).getByRole("button", { name: /ginecomastia/i })).toBeInTheDocument();
+      expect(within(gallery).queryByRole("button", { name: /marcacion abdominal/i })).not.toBeInTheDocument();
+
+      closeCatalog();
+      openCatalog(/capilar/i);
+
+      expect(within(gallery).getByRole("button", { name: /implante capilar/i })).toBeInTheDocument();
+      expect(within(gallery).queryByRole("button", { name: /tratamientos capilares/i })).not.toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("shows services for a selected catalog and returns to all catalogs from the selected rail", () => {
     vi.useFakeTimers();
     try {
@@ -354,7 +496,7 @@ describe("landing", () => {
 
       fireEvent.click(within(gallery).getByRole("button", { name: /mamas/i }));
       act(() => {
-        vi.advanceTimersByTime(80);
+        vi.advanceTimersByTime(190);
       });
 
       expect(gallery.querySelector("[data-gallery-services]")).toBeInTheDocument();
@@ -401,6 +543,89 @@ describe("landing", () => {
     }
   });
 
+  it("lays out gallery services in six-cell grids with responsive previews only for photographed services", () => {
+    vi.useFakeTimers();
+    try {
+      const { container } = render(<App />);
+      const gallery = container.querySelector<HTMLElement>("#galeria");
+      expect(gallery).toBeInTheDocument();
+      if (!gallery) return;
+
+      const openCatalog = (label: RegExp) => {
+        fireEvent.click(within(gallery).getByRole("button", { name: label }));
+        act(() => {
+          vi.advanceTimersByTime(190);
+        });
+      };
+
+      const closeCatalog = () => {
+        fireEvent.click(gallery.querySelector<HTMLButtonElement>("[data-gallery-selected-catalog]")!);
+        act(() => {
+          vi.advanceTimersByTime(340);
+        });
+      };
+
+      openCatalog(/mamas/i);
+
+      const servicesGrid = gallery.querySelector<HTMLElement>("[data-gallery-services-grid]");
+      expect(servicesGrid).toBeInTheDocument();
+      expect(servicesGrid).toHaveAttribute("data-gallery-service-cells", "6");
+      expect(servicesGrid?.className).toContain("grid-cols-2");
+      expect(servicesGrid?.className).toContain("md:h-[540px]");
+      expect(servicesGrid?.className).toContain("lg:h-[540px]");
+      expect(servicesGrid?.className).toContain("md:grid-cols-[repeat(var(--gallery-service-cols),minmax(0,1fr))]");
+      expect(servicesGrid?.className).toContain("md:grid-rows-[repeat(var(--gallery-service-rows),minmax(0,1fr))]");
+      expect(servicesGrid?.style.getPropertyValue("--gallery-service-cols")).toBe("3");
+      expect(servicesGrid?.style.getPropertyValue("--gallery-service-rows")).toBe("2");
+
+      const photographedService = within(gallery).getByRole("button", { name: /aumento de mamas/i });
+      const preview = photographedService.querySelector<HTMLElement>("[data-gallery-service-preview]");
+      const readingOverlay = photographedService.querySelector<HTMLElement>(
+        "[data-gallery-service-reading-overlay]"
+      );
+      const desktopSource = photographedService.querySelector<HTMLSourceElement>(
+        'source[media="(min-width: 1024px)"]'
+      );
+      const tabletSource = photographedService.querySelector<HTMLSourceElement>(
+        'source[media="(min-width: 768px)"]'
+      );
+      const previewImage = photographedService.querySelector<HTMLImageElement>("img");
+      const photographedDescription = within(photographedService).getByText(
+        /mamoplastia de aumento con seguimiento fotografico/i
+      );
+      expect(photographedService).toHaveAttribute("data-gallery-service-has-preview", "true");
+      expect(preview).toBeInTheDocument();
+      expect(readingOverlay).toBeInTheDocument();
+      expect(readingOverlay).toHaveAttribute("data-gallery-service-reading-overlay", "gradient");
+      expect(readingOverlay?.className).toContain("absolute");
+      expect(photographedDescription.className).toContain("text-white/70");
+      expect(photographedDescription.className).not.toContain("text-white/72");
+      expect(desktopSource?.srcset).toContain("/t_optimize/");
+      expect(tabletSource?.srcset).toContain("/t_acotado/");
+      expect(previewImage?.src).toContain("/t_acotado/");
+
+      const emptyService = within(gallery).getByRole("button", { name: /reduccion de mamas/i });
+      const emptyServiceStatus = within(emptyService).getByText(/sin fotos/i);
+      expect(emptyService).toHaveAttribute("data-gallery-service-has-preview", "false");
+      expect(emptyService.querySelector("[data-gallery-service-preview]")).not.toBeInTheDocument();
+      expect(emptyService.querySelector("[data-gallery-service-empty-surface]")).toBeInTheDocument();
+      expect(emptyServiceStatus.className).toContain("text-white/50");
+      expect(emptyServiceStatus.className).not.toContain("text-white/55");
+
+      closeCatalog();
+      openCatalog(/cirugia masculina/i);
+
+      const singleServiceGrid = gallery.querySelector<HTMLElement>("[data-gallery-services-grid]");
+      const singleService = within(gallery).getByRole("button", { name: /ginecomastia/i });
+      expect(singleServiceGrid).toHaveAttribute("data-gallery-service-cells", "6");
+      expect(singleServiceGrid?.style.getPropertyValue("--gallery-service-cols")).toBe("3");
+      expect(singleServiceGrid?.style.getPropertyValue("--gallery-service-rows")).toBe("2");
+      expect(singleService).toHaveAttribute("data-gallery-service-position", "1");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("opens result photos or a no-photos state from gallery services", () => {
     vi.useFakeTimers();
     const { container } = render(<App />);
@@ -410,7 +635,7 @@ describe("landing", () => {
 
     fireEvent.click(within(gallery).getByRole("button", { name: /mamas/i }));
     act(() => {
-      vi.advanceTimersByTime(80);
+      vi.advanceTimersByTime(190);
     });
     fireEvent.click(within(gallery).getByRole("button", { name: /aumento de mamas/i }));
 
@@ -490,7 +715,7 @@ describe("landing", () => {
 
     fireEvent.click(within(gallery).getByRole("button", { name: /mamas/i }));
     act(() => {
-      vi.advanceTimersByTime(80);
+      vi.advanceTimersByTime(190);
     });
     fireEvent.click(within(gallery).getByRole("button", { name: /aumento de mamas/i }));
 
@@ -597,7 +822,7 @@ describe("landing", () => {
 
     fireEvent.click(within(gallery).getByRole("button", { name: /mamas/i }));
     act(() => {
-      vi.advanceTimersByTime(80);
+      vi.advanceTimersByTime(190);
     });
     fireEvent.click(within(gallery).getByRole("button", { name: /aumento de mamas/i }));
     expect(document.documentElement.style.overflow).toBe("hidden");
