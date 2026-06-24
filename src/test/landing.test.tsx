@@ -431,18 +431,21 @@ describe("landing", () => {
     });
   });
 
-  it("keeps mobile gallery selection anchored when lower catalog cards collapse", () => {
+  it("keeps mobile gallery selection anchored when lower catalog cards collapse", async () => {
     const originalInnerWidth = window.innerWidth;
-    const originalRequestAnimationFrame = window.requestAnimationFrame;
-    const originalScrollIntoView = HTMLElement.prototype.scrollIntoView;
-    const scrollIntoView = vi.fn();
-
-    Object.defineProperty(window, "innerWidth", { configurable: true, value: 390 });
-    window.requestAnimationFrame = ((callback: FrameRequestCallback) => {
+    const originalWindowRequestAnimationFrame = window.requestAnimationFrame;
+    const originalGlobalRequestAnimationFrame = globalThis.requestAnimationFrame;
+    const originalScrollTo = window.scrollTo;
+    const scrollTo = vi.fn();
+    const requestAnimationFrameMock = ((callback: FrameRequestCallback) => {
       callback(0);
       return 1;
     }) as typeof window.requestAnimationFrame;
-    HTMLElement.prototype.scrollIntoView = scrollIntoView;
+
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: 390 });
+    window.requestAnimationFrame = requestAnimationFrameMock;
+    globalThis.requestAnimationFrame = requestAnimationFrameMock;
+    window.scrollTo = scrollTo as typeof window.scrollTo;
 
     try {
       const { container } = render(<App />);
@@ -452,11 +455,170 @@ describe("landing", () => {
 
       fireEvent.click(within(gallery).getByRole("button", { name: "Capilar" }));
 
-      expect(scrollIntoView).toHaveBeenCalledWith({ behavior: "auto", block: "start" });
+      expect(scrollTo).toHaveBeenCalledTimes(1);
+
+      await waitFor(() => {
+        expect(gallery.querySelector("[data-gallery-motion-stage]")).toHaveAttribute("data-state", "selected");
+      });
+
+      expect(scrollTo).toHaveBeenCalledTimes(2);
+      expect(scrollTo).toHaveBeenLastCalledWith(0, 0);
     } finally {
       Object.defineProperty(window, "innerWidth", { configurable: true, value: originalInnerWidth });
-      window.requestAnimationFrame = originalRequestAnimationFrame;
-      HTMLElement.prototype.scrollIntoView = originalScrollIntoView;
+      window.requestAnimationFrame = originalWindowRequestAnimationFrame;
+      globalThis.requestAnimationFrame = originalGlobalRequestAnimationFrame;
+      window.scrollTo = originalScrollTo;
+      vi.restoreAllMocks();
+    }
+  });
+
+  it("anchors selected mobile gallery below the fixed navbar", () => {
+    const originalInnerWidth = window.innerWidth;
+    const originalWindowRequestAnimationFrame = window.requestAnimationFrame;
+    const originalGlobalRequestAnimationFrame = globalThis.requestAnimationFrame;
+    const originalScrollTo = window.scrollTo;
+    const originalGetBoundingClientRect = HTMLElement.prototype.getBoundingClientRect;
+    const scrollTo = vi.fn();
+    const requestAnimationFrameMock = ((callback: FrameRequestCallback) => {
+      callback(0);
+      return 1;
+    }) as typeof window.requestAnimationFrame;
+
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: 390 });
+    vi.spyOn(window, "scrollY", "get").mockReturnValue(500);
+    window.requestAnimationFrame = requestAnimationFrameMock;
+    globalThis.requestAnimationFrame = requestAnimationFrameMock;
+    window.scrollTo = scrollTo as typeof window.scrollTo;
+    HTMLElement.prototype.getBoundingClientRect = function getBoundingClientRect() {
+      if (this.matches("[data-gallery-motion-stage]")) {
+        return {
+          bottom: 840,
+          height: 540,
+          left: 0,
+          right: 390,
+          top: 300,
+          width: 390,
+          x: 0,
+          y: 300,
+          toJSON: () => ({}),
+        };
+      }
+
+      if (this.tagName.toLowerCase() === "nav") {
+        return {
+          bottom: 80,
+          height: 80,
+          left: 0,
+          right: 390,
+          top: 0,
+          width: 390,
+          x: 0,
+          y: 0,
+          toJSON: () => ({}),
+        };
+      }
+
+      return originalGetBoundingClientRect.call(this);
+    };
+
+    try {
+      const { container } = render(<App />);
+      const gallery = container.querySelector<HTMLElement>("#galeria");
+      expect(gallery).toBeInTheDocument();
+      if (!gallery) return;
+
+      fireEvent.click(within(gallery).getByRole("button", { name: "Capilar" }));
+
+      expect(scrollTo).toHaveBeenCalledWith(0, 700);
+    } finally {
+      Object.defineProperty(window, "innerWidth", { configurable: true, value: originalInnerWidth });
+      window.requestAnimationFrame = originalWindowRequestAnimationFrame;
+      globalThis.requestAnimationFrame = originalGlobalRequestAnimationFrame;
+      window.scrollTo = originalScrollTo;
+      HTMLElement.prototype.getBoundingClientRect = originalGetBoundingClientRect;
+      vi.restoreAllMocks();
+    }
+  });
+
+  it("keeps mobile gallery anchored when returning from a selected catalog", async () => {
+    const originalInnerWidth = window.innerWidth;
+    const originalWindowRequestAnimationFrame = window.requestAnimationFrame;
+    const originalGlobalRequestAnimationFrame = globalThis.requestAnimationFrame;
+    const originalScrollTo = window.scrollTo;
+    const scrollTo = vi.fn();
+    const requestAnimationFrameMock = ((callback: FrameRequestCallback) => {
+      callback(0);
+      return 1;
+    }) as typeof window.requestAnimationFrame;
+
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: 390 });
+    window.requestAnimationFrame = requestAnimationFrameMock;
+    globalThis.requestAnimationFrame = requestAnimationFrameMock;
+    window.scrollTo = scrollTo as typeof window.scrollTo;
+
+    try {
+      const { container } = render(<App />);
+      const gallery = container.querySelector<HTMLElement>("#galeria");
+      expect(gallery).toBeInTheDocument();
+      if (!gallery) return;
+
+      fireEvent.click(within(gallery).getByRole("button", { name: "Medicina estetica" }));
+      expect(scrollTo).toHaveBeenCalledTimes(1);
+
+      await waitFor(() => {
+        expect(gallery.querySelector("[data-gallery-motion-stage]")).toHaveAttribute("data-state", "selected");
+      });
+
+      fireEvent.click(gallery.querySelector<HTMLButtonElement>("[data-gallery-selected-catalog]")!);
+
+      await waitFor(() => {
+        expect(scrollTo).toHaveBeenCalledTimes(3);
+      });
+
+      expect(scrollTo).toHaveBeenLastCalledWith(0, 0);
+    } finally {
+      Object.defineProperty(window, "innerWidth", { configurable: true, value: originalInnerWidth });
+      window.requestAnimationFrame = originalWindowRequestAnimationFrame;
+      globalThis.requestAnimationFrame = originalGlobalRequestAnimationFrame;
+      window.scrollTo = originalScrollTo;
+      vi.restoreAllMocks();
+    }
+  });
+
+  it("keeps stacked tablet gallery anchored when lower catalog cards collapse", async () => {
+    const originalInnerWidth = window.innerWidth;
+    const originalWindowRequestAnimationFrame = window.requestAnimationFrame;
+    const originalGlobalRequestAnimationFrame = globalThis.requestAnimationFrame;
+    const originalScrollTo = window.scrollTo;
+    const scrollTo = vi.fn();
+    const requestAnimationFrameMock = ((callback: FrameRequestCallback) => {
+      callback(0);
+      return 1;
+    }) as typeof window.requestAnimationFrame;
+
+    Object.defineProperty(window, "innerWidth", { configurable: true, value: 900 });
+    window.requestAnimationFrame = requestAnimationFrameMock;
+    globalThis.requestAnimationFrame = requestAnimationFrameMock;
+    window.scrollTo = scrollTo as typeof window.scrollTo;
+
+    try {
+      const { container } = render(<App />);
+      const gallery = container.querySelector<HTMLElement>("#galeria");
+      expect(gallery).toBeInTheDocument();
+      if (!gallery) return;
+
+      fireEvent.click(within(gallery).getByRole("button", { name: "Piel y laser" }));
+
+      await waitFor(() => {
+        expect(gallery.querySelector("[data-gallery-motion-stage]")).toHaveAttribute("data-state", "selected");
+      });
+
+      expect(scrollTo).toHaveBeenCalledTimes(2);
+    } finally {
+      Object.defineProperty(window, "innerWidth", { configurable: true, value: originalInnerWidth });
+      window.requestAnimationFrame = originalWindowRequestAnimationFrame;
+      globalThis.requestAnimationFrame = originalGlobalRequestAnimationFrame;
+      window.scrollTo = originalScrollTo;
       vi.restoreAllMocks();
     }
   });
