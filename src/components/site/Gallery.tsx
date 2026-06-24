@@ -401,6 +401,9 @@ export function Gallery({ resultRequest }: GalleryProps) {
   const servicesCatalog = isSelectedLayout ? selectedCatalog : null;
   const areServicesInteractive = servicesPanelState === "open";
   const serviceGridLayout = servicesCatalog ? getServiceGridLayout(servicesCatalog.services.length) : null;
+  const catalogOverflowClass = "overflow-hidden";
+  const catalogHoverRoomClass = catalogPanelState === "open" ? "lg:-my-0.5 lg:py-0.5" : "";
+  const servicesOverflowClass = servicesPanelState === "open" ? "overflow-visible" : "overflow-hidden";
 
   useBodyScrollLock(Boolean(modal));
 
@@ -726,7 +729,7 @@ export function Gallery({ resultRequest }: GalleryProps) {
             data-state={galleryViewState}
           >
             <div
-              className={`flex flex-col overflow-hidden opacity-100 transition-[max-height,opacity,transform,gap] duration-[450ms] ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none lg:h-[540px] lg:max-h-none lg:flex-row lg:gap-2 ${
+              className={`flex flex-col ${catalogOverflowClass} ${catalogHoverRoomClass} opacity-100 transition-[max-height,opacity,transform,gap] duration-[450ms] ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none lg:h-[540px] lg:max-h-none lg:flex-row lg:gap-2 ${
                 isSelectedLayout ? "max-h-[260px] gap-0" : "max-h-[2000px] gap-3"
               }`}
               data-gallery-catalogs
@@ -785,7 +788,7 @@ export function Gallery({ resultRequest }: GalleryProps) {
 
             <div
               aria-hidden={servicesPanelState === "open" ? undefined : true}
-              className={`grid overflow-hidden transition-[opacity,transform] duration-[420ms] ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none md:transition-[grid-template-rows,max-height,opacity,transform] ${
+              className={`grid ${servicesOverflowClass} transition-[opacity,transform] duration-[420ms] ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none md:transition-[grid-template-rows,max-height,opacity,transform] ${
                 servicesPanelState === "open"
                   ? "grid-rows-[1fr] max-h-[3200px] translate-y-0 opacity-100 md:max-h-[1200px]"
                   : servicesPanelState === "closing"
@@ -795,7 +798,7 @@ export function Gallery({ resultRequest }: GalleryProps) {
               data-gallery-services
               data-state={servicesPanelState}
             >
-              <div className="min-h-0 overflow-hidden">
+              <div className={`min-h-0 ${servicesOverflowClass}`}>
                 {servicesCatalog && serviceGridLayout ? (
                   <div
                     className="grid grid-cols-2 gap-3 md:h-[540px] md:grid-cols-[repeat(var(--gallery-service-cols),minmax(0,1fr))] md:grid-rows-[repeat(var(--gallery-service-rows),minmax(0,1fr))] lg:h-[540px]"
@@ -1066,7 +1069,7 @@ function CatalogCard({
       />
       <span
         aria-hidden="true"
-        className="absolute right-5 top-5 z-10 bg-copper px-3 py-1 font-sans text-2xs uppercase tracking-[0.14em] text-white lg:bottom-6 lg:right-6 lg:top-auto"
+        className="absolute right-5 top-5 z-10 bg-copper px-3 py-1 font-sans text-2xs uppercase tracking-[0.14em] text-white lg:right-6 lg:top-6"
         data-gallery-service-count
       >
         {serviceCount}

@@ -291,8 +291,17 @@ describe("landing", () => {
     expect(catalogPanel?.className).toContain("max-h-[2000px]");
     expect(catalogPanel?.className).not.toContain("max-h-[1400px]");
     expect(catalogPanel?.className).toContain("lg:h-[540px]");
+    expect(catalogPanel?.className).toContain("overflow-hidden");
+    expect(catalogPanel?.className).not.toContain("lg:overflow-visible");
+    expect(catalogPanel?.className).toContain("lg:-my-0.5");
+    expect(catalogPanel?.className).toContain("lg:py-0.5");
     expect(servicesPanel).toHaveAttribute("data-state", "closed");
+    expect(servicesPanel?.className).toContain("overflow-hidden");
+    expect(servicesPanel?.className).not.toContain("overflow-visible");
     expect(servicesPanel?.className).toContain("grid-rows-[0fr]");
+    const servicesClipWrapper = servicesPanel?.firstElementChild as HTMLElement | null;
+    expect(servicesClipWrapper?.className).toContain("overflow-hidden");
+    expect(servicesClipWrapper?.className).not.toContain("overflow-visible");
 
     const firstCatalog = gallery.querySelector<HTMLElement>("[data-gallery-catalog]");
     const countBadge = firstCatalog?.querySelector<HTMLElement>("[data-gallery-service-count]");
@@ -308,8 +317,11 @@ describe("landing", () => {
     expect(countBadge).toBeInTheDocument();
     expect(countBadge?.textContent).toBe("4");
     expect(countBadge?.className).toContain("absolute");
-    expect(countBadge?.className).toContain("lg:bottom-6");
+    expect(countBadge?.className).toContain("top-5");
+    expect(countBadge?.className).toContain("lg:top-6");
     expect(countBadge?.className).toContain("lg:right-6");
+    expect(countBadge?.className).not.toContain("lg:bottom-6");
+    expect(countBadge?.className).not.toContain("lg:top-auto");
     expect(bottomGradient).toBeInTheDocument();
     expect(bottomGradient?.className).toContain("h-2/3");
     expect(bottomGradient?.className).toContain("from-darker/95");
@@ -334,6 +346,10 @@ describe("landing", () => {
 
     expect(catalogPanel).toHaveAttribute("data-state", "collapsed");
     expect(catalogPanel?.className).toContain("max-h-[260px]");
+    expect(catalogPanel?.className).toContain("overflow-hidden");
+    expect(catalogPanel?.className).not.toContain("lg:overflow-visible");
+    expect(catalogPanel?.className).not.toContain("lg:-my-0.5");
+    expect(catalogPanel?.className).not.toContain("lg:py-0.5");
     expect(gallery.querySelector("[data-gallery-motion-stage]")).toHaveAttribute("data-state", "selecting");
     expect(servicesPanel).toHaveAttribute("data-state", "closed");
     expect(servicesPanel?.className).toContain("grid-rows-[0fr]");
@@ -375,6 +391,10 @@ describe("landing", () => {
 
     expect(gallery.querySelector("[data-gallery-motion-stage]")).toHaveAttribute("data-state", "selected");
     expect(servicesPanel).toHaveAttribute("data-state", "open");
+    expect(servicesPanel?.className).toContain("overflow-visible");
+    expect(servicesPanel?.className).not.toContain("overflow-hidden");
+    expect(servicesClipWrapper?.className).toContain("overflow-visible");
+    expect(servicesClipWrapper?.className).not.toContain("overflow-hidden");
     expect(servicesPanel?.className).toContain("transition-[opacity,transform]");
     expect(servicesPanel?.className).toContain(
       "md:transition-[grid-template-rows,max-height,opacity,transform]"
