@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { existsSync, readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -6,6 +6,7 @@ import App from "@/App";
 
 afterEach(() => {
   vi.restoreAllMocks();
+  vi.useRealTimers();
   document.documentElement.style.overflow = "";
   document.body.style.overflow = "";
 });
@@ -73,11 +74,11 @@ describe("landing", () => {
     expect(badge).toHaveTextContent(/Dr\. Masedo Carlos Dante/i);
   });
 
-  it("keeps carousel arrow controls outside reveal clipping", () => {
+  it("keeps gallery and testimonial controls outside reveal clipping", () => {
     const { container } = render(<App />);
 
-    const galleryCarousel = container.querySelector<HTMLElement>("[data-gallery-carousel]");
-    const galleryReveal = galleryCarousel?.parentElement as HTMLElement | null;
+    const galleryStage = container.querySelector<HTMLElement>("[data-gallery-motion-stage]");
+    const galleryReveal = galleryStage?.parentElement as HTMLElement | null;
 
     const testimonialsCarousel = Array.from(
       container.querySelectorAll<HTMLElement>("#testimonios div")
@@ -222,210 +223,210 @@ describe("landing", () => {
     expect(footerTopButton.className).toContain("w-11");
   });
 
-  it("renders a responsive carousel with only real result categories", () => {
+  it("renders gallery procedure catalogs instead of the old carousel", () => {
     const { container } = render(<App />);
-    const gallery = container.querySelector("#galeria");
+    const gallery = container.querySelector<HTMLElement>("#galeria");
     expect(gallery).toBeInTheDocument();
     if (!gallery) return;
 
-    const carousel = gallery.querySelector("[data-gallery-carousel]");
-    expect(carousel).toBeInTheDocument();
-    expect(carousel).toHaveAttribute(
-      "data-autoplay-interval",
-      "4000"
-    );
-    expect(carousel?.className).toContain("aspect-[3/4]");
-    expect(carousel?.className).toContain("md:aspect-[3/2]");
+    expect(gallery.querySelector("[data-gallery-catalogs]")).toBeInTheDocument();
+    expect(gallery.querySelector("[data-gallery-carousel]")).not.toBeInTheDocument();
     expect(gallery.querySelector("[data-gallery-mosaic]")).not.toBeInTheDocument();
-    expect(gallery.querySelector("[data-gallery-track]")).not.toBeInTheDocument();
+    expect(gallery.querySelector("[data-carousel-track]")).not.toBeInTheDocument();
     expect(gallery.querySelectorAll("[data-gallery-dot]").length).toBe(0);
-    const previousButton = screen.getByRole("button", { name: /ver resultado anterior/i });
-    const nextButton = screen.getByRole("button", { name: /ver resultado siguiente/i });
-    expect(previousButton.className).toContain("rounded-full");
-    expect(previousButton.className).toContain("lg:bg-darker/80");
-    expect(previousButton.className).toContain("left-0");
-    expect(previousButton.className).not.toContain("-left");
-    expect(nextButton.className).toContain("lg:hover:bg-copper");
-    expect(nextButton.className).toContain("right-0");
-    expect(nextButton.className).not.toContain("-right");
 
-    const slides = gallery.querySelectorAll("[data-gallery-slide]");
-    expect(slides.length).toBe(3);
-    const mamoplastiaDesktopPreview = gallery.querySelector('[data-result-id="mamoplastia-aumento"] img');
-    const abdominoplastiaDesktopPreview = gallery.querySelector('[data-result-id="abdominoplastia"] img');
-    const pexiaDesktopPreview = gallery.querySelector('[data-result-id="pexia-protesis"] img');
+    ["Mamas", "Rostro", "Cuerpo", "Cirugia masculina", "Capilar"].forEach((label) => {
+      expect(within(gallery).getByRole("button", { name: new RegExp(label, "i") })).toBeInTheDocument();
+    });
 
-    expect(mamoplastiaDesktopPreview).toHaveAttribute("src", expect.stringContaining("/t_optimize/"));
-    expect(mamoplastiaDesktopPreview).toHaveAttribute("src", expect.stringContaining("mamoplastia-01_32"));
-    expect(abdominoplastiaDesktopPreview).toHaveAttribute("src", expect.stringContaining("/t_optimize/"));
-    expect(abdominoplastiaDesktopPreview).toHaveAttribute("src", expect.stringContaining("abdominoplastia-01_32"));
-    expect(pexiaDesktopPreview).toHaveAttribute("src", expect.stringContaining("/t_optimize/"));
-    expect(pexiaDesktopPreview).toHaveAttribute("src", expect.stringContaining("pex-01_32"));
-
-    const mamoplastiaMobilePreview = gallery.querySelector('[data-result-id="mamoplastia-aumento"] source');
-    const abdominoplastiaMobilePreview = gallery.querySelector('[data-result-id="abdominoplastia"] source');
-    const pexiaMobilePreview = gallery.querySelector('[data-result-id="pexia-protesis"] source');
-
-    expect(mamoplastiaMobilePreview).toHaveAttribute("srcset", expect.stringContaining("/t_mobile/"));
-    expect(mamoplastiaMobilePreview).toHaveAttribute("srcset", expect.stringContaining("mamoplastia-01_llctwx"));
-    expect(abdominoplastiaMobilePreview).toHaveAttribute("srcset", expect.stringContaining("/t_mobile/"));
-    expect(abdominoplastiaMobilePreview).toHaveAttribute("srcset", expect.stringContaining("abdominoplastia-01_fatsey"));
-    expect(pexiaMobilePreview).toHaveAttribute("srcset", expect.stringContaining("/t_mobile/"));
-    expect(pexiaMobilePreview).toHaveAttribute("srcset", expect.stringContaining("pex-01_vdffzs"));
-    expect(
-      gallery.querySelector('[data-result-id="mamoplastia-aumento"] source')?.getAttribute("srcset")
-    ).not.toContain("/t_optimize/");
-    expect(within(gallery as HTMLElement).queryByText(/rinoplastia/i)).not.toBeInTheDocument();
-    expect(within(gallery as HTMLElement).queryByText(/liposucci/i)).not.toBeInTheDocument();
-    expect(within(gallery as HTMLElement).queryByText(/espacio reservado/i)).not.toBeInTheDocument();
+    const catalogCards = gallery.querySelectorAll("[data-gallery-catalog]");
+    expect(catalogCards.length).toBe(5);
+    catalogCards.forEach((card) => {
+      expect(card.className).toContain("min-h-11");
+      expect(card.className).toContain("transition-");
+    });
   });
 
-  it("keeps inactive gallery slides out of the keyboard order while preserving modal open behavior", () => {
+  it("preserves the gallery section visual identity while using the new catalog layout", () => {
     const { container } = render(<App />);
-    const gallery = container.querySelector("#galeria");
+    const gallery = container.querySelector<HTMLElement>("#galeria");
     expect(gallery).toBeInTheDocument();
     if (!gallery) return;
 
-    const slides = Array.from(gallery.querySelectorAll<HTMLButtonElement>("[data-gallery-slide]"));
-    expect(slides).toHaveLength(3);
+    expect(gallery.className).toContain("bg-dark");
+    expect(gallery.className).toContain("py-20");
+    expect(gallery.className).toContain("md:py-28");
+    expect(gallery.className).toContain("lg:py-32");
+    expect(gallery.className).not.toContain("bg-[#f4f1ec]");
 
-    expect(slides[0]).toHaveAttribute("tabindex", "0");
-    expect(slides[0]).toHaveAttribute("aria-hidden", "false");
-    slides.slice(1).forEach((slide) => {
-      expect(slide).toHaveAttribute("tabindex", "-1");
-      expect(slide).toHaveAttribute("aria-hidden", "true");
-    });
+    const eyebrow = within(gallery).getByText(/^Resultados$/i);
+    expect(eyebrow.className).toContain("font-sans");
+    expect(eyebrow.className).toContain("tracking-brand-widest");
+    expect(eyebrow.className).toContain("text-sage");
 
-    fireEvent.click(slides[0]);
-    expect(screen.getByRole("dialog", { name: /mamoplastia de aumento/i })).toBeInTheDocument();
+    const heading = within(gallery).getByRole("heading", { name: /galer.a de trabajos/i });
+    expect(heading.className).toContain("h-display-light");
+    expect(heading.className).toContain("text-white");
   });
 
-  it("keeps desktop gallery clicks free of pointer capture until drag starts", () => {
+  it("uses desktop vertical catalog labels and mobile collapse motion states", () => {
     const { container } = render(<App />);
-    const gallery = container.querySelector("#galeria");
+    const gallery = container.querySelector<HTMLElement>("#galeria");
     expect(gallery).toBeInTheDocument();
     if (!gallery) return;
 
-    const gestureSurface = gallery.querySelector<HTMLElement>("[data-gallery-gesture]");
-    const firstSlide = gallery.querySelector<HTMLButtonElement>("[data-gallery-slide]");
-    expect(gestureSurface).toBeInTheDocument();
-    expect(firstSlide).toBeInTheDocument();
-    if (!gestureSurface || !firstSlide) return;
+    const catalogPanel = gallery.querySelector<HTMLElement>("[data-gallery-catalogs]");
+    const servicesPanel = gallery.querySelector<HTMLElement>("[data-gallery-services]");
+    expect(catalogPanel).toHaveAttribute("data-state", "open");
+    expect(catalogPanel).toHaveAttribute("data-gallery-mobile-collapse", "true");
+    expect(catalogPanel?.className).toContain("transition-[max-height,opacity,transform,gap]");
+    expect(servicesPanel).toHaveAttribute("data-state", "closed");
+    expect(servicesPanel?.className).toContain("grid-rows-[0fr]");
 
-    const setPointerCapture = vi.fn();
-    Object.defineProperty(gestureSurface, "setPointerCapture", {
-      configurable: true,
-      value: setPointerCapture,
+    const firstCatalog = gallery.querySelector<HTMLElement>("[data-gallery-catalog]");
+    const firstCatalogDesktopPreview = firstCatalog?.querySelector<HTMLImageElement>("img");
+    const firstCatalogMobilePreview = firstCatalog?.querySelector<HTMLSourceElement>("source");
+    const verticalName = firstCatalog?.querySelector<HTMLElement>("[data-gallery-catalog-name-vertical]");
+    const horizontalName = firstCatalog?.querySelector<HTMLElement>("[data-gallery-catalog-name-horizontal]");
+    expect(firstCatalog?.className).toContain("aspect-[3/2]");
+    expect(firstCatalog?.className).toContain("lg:aspect-[3/4]");
+    expect(firstCatalogDesktopPreview).toHaveAttribute("src", expect.stringContaining("/t_mobile/"));
+    expect(firstCatalogDesktopPreview).toHaveAttribute("src", expect.stringContaining("mamoplastia-01_llctwx"));
+    expect(firstCatalogMobilePreview).toHaveAttribute("srcset", expect.stringContaining("/t_optimize/"));
+    expect(firstCatalogMobilePreview).toHaveAttribute("srcset", expect.stringContaining("mamoplastia-01_32"));
+    expect(verticalName).toBeInTheDocument();
+    expect(verticalName?.className).toContain("lg:[writing-mode:vertical-rl]");
+    expect(verticalName?.className).toContain("lg:rotate-180");
+    expect(verticalName?.className).toContain("lg:group-hover:opacity-0");
+    expect(horizontalName).toBeInTheDocument();
+    expect(horizontalName?.className).toContain("lg:opacity-0");
+    expect(horizontalName?.className).toContain("lg:group-hover:opacity-100");
+
+    vi.useFakeTimers();
+    fireEvent.click(within(gallery).getByRole("button", { name: /mamas/i }));
+
+    expect(catalogPanel).toHaveAttribute("data-state", "collapsed");
+    expect(catalogPanel?.className).toContain("max-h-[260px]");
+    expect(gallery.querySelector("[data-gallery-motion-stage]")).toHaveAttribute("data-state", "selecting");
+    expect(servicesPanel).toHaveAttribute("data-state", "closed");
+    expect(servicesPanel?.className).toContain("grid-rows-[0fr]");
+    const settlingHiddenCatalogs = Array.from(
+      gallery.querySelectorAll<HTMLElement>('[data-mobile-state="hidden"]')
+    );
+    expect(settlingHiddenCatalogs.length).toBe(4);
+    settlingHiddenCatalogs.forEach((catalog) => {
+      expect(catalog.className).toContain("transition-[max-height,opacity");
+      expect(catalog.className).not.toContain("transition-[max-height,flex");
     });
 
-    const event = new MouseEvent("pointerdown", {
-      bubbles: true,
-      cancelable: true,
-      button: 0,
-      clientX: 160,
-      clientY: 120,
+    act(() => {
+      vi.advanceTimersByTime(80);
     });
 
-    Object.defineProperties(event, {
-      isPrimary: { value: true },
-      pointerId: { value: 1 },
-      pointerType: { value: "mouse" },
+    expect(gallery.querySelector("[data-gallery-motion-stage]")).toHaveAttribute("data-state", "selected");
+    expect(servicesPanel).toHaveAttribute("data-state", "open");
+    expect(servicesPanel?.className).toContain("grid-rows-[1fr]");
+    expect(gallery.querySelectorAll('[data-mobile-state="hidden"]').length).toBe(4);
+    const selectedCatalog = gallery.querySelector<HTMLElement>("[data-gallery-selected-catalog]");
+    expect(selectedCatalog).toBeInTheDocument();
+    expect(selectedCatalog?.className).toContain("lg:max-h-none");
+
+    const hiddenCatalogs = Array.from(
+      gallery.querySelectorAll<HTMLElement>('[data-mobile-state="hidden"]')
+    );
+    hiddenCatalogs.forEach((catalog) => {
+      expect(catalog).toHaveAttribute("aria-hidden", "true");
+      expect(catalog).toHaveAttribute("tabindex", "-1");
+      expect(catalog.className).toContain("lg:w-0");
+      expect(catalog.className).toContain("lg:flex-none");
+      expect(catalog.className).not.toContain("lg:opacity-100");
+      expect(catalog.className).not.toContain("lg:pointer-events-auto");
     });
-
-    fireEvent(gestureSurface, event);
-    expect(setPointerCapture).not.toHaveBeenCalled();
-
-    fireEvent.click(firstSlide);
-    expect(screen.getByRole("dialog", { name: /mamoplastia de aumento/i })).toBeInTheDocument();
   });
 
-  it("supports gallery swipe and mouse drag without opening the modal", () => {
-    const { container } = render(<App />);
-    const gallery = container.querySelector("#galeria");
-    expect(gallery).toBeInTheDocument();
-    if (!gallery) return;
+  it("shows services for a selected catalog and returns to all catalogs from the selected rail", () => {
+    vi.useFakeTimers();
+    try {
+      const { container } = render(<App />);
+      const gallery = container.querySelector<HTMLElement>("#galeria");
+      expect(gallery).toBeInTheDocument();
+      if (!gallery) return;
 
-    const gestureSurface = gallery.querySelector("[data-gallery-gesture]");
-    const slides = Array.from(gallery.querySelectorAll<HTMLButtonElement>("[data-gallery-slide]"));
-    expect(gestureSurface).toBeInTheDocument();
-    expect(slides).toHaveLength(3);
-    if (!gestureSurface) return;
-
-    const fireCarouselPointer = (
-      type: "pointerdown" | "pointermove" | "pointerup",
-      options: {
-        pointerId: number;
-        pointerType: "mouse" | "touch";
-        clientX: number;
-        clientY: number;
-        button?: number;
-      }
-    ) => {
-      const event = new MouseEvent(type, {
-        bubbles: true,
-        cancelable: true,
-        clientX: options.clientX,
-        clientY: options.clientY,
-        button: options.button ?? 0,
+      fireEvent.click(within(gallery).getByRole("button", { name: /mamas/i }));
+      act(() => {
+        vi.advanceTimersByTime(80);
       });
 
-      Object.defineProperties(event, {
-        isPrimary: { value: true },
-        pointerId: { value: options.pointerId },
-        pointerType: { value: options.pointerType },
+      expect(gallery.querySelector("[data-gallery-services]")).toBeInTheDocument();
+      expect(gallery.querySelector("[data-gallery-selected-catalog]")).toBeInTheDocument();
+      expect(within(gallery).getByRole("button", { name: /aumento de mamas/i })).toBeInTheDocument();
+      expect(within(gallery).getByRole("button", { name: /mastopexia/i })).toBeInTheDocument();
+      expect(within(gallery).getByRole("button", { name: /reduccion de mamas/i })).toBeInTheDocument();
+
+      fireEvent.click(gallery.querySelector<HTMLButtonElement>("[data-gallery-selected-catalog]")!);
+
+      expect(gallery.querySelector("[data-gallery-motion-stage]")).toHaveAttribute("data-state", "closing");
+      expect(gallery.querySelector("[data-gallery-services]")).toHaveAttribute("data-state", "closing");
+      expect(gallery.querySelector("[data-gallery-catalogs]")).toHaveAttribute("data-state", "closing");
+      expect(gallery.querySelector("[data-gallery-selected-catalog]")).toBeInTheDocument();
+      expect(gallery.querySelector("[data-gallery-services]")).toHaveTextContent(/aumento de mamas/i);
+
+      act(() => {
+        vi.advanceTimersByTime(260);
       });
 
-      fireEvent(gestureSurface, event);
-    };
+      expect(gallery.querySelector("[data-gallery-motion-stage]")).toHaveAttribute("data-state", "restoring");
+      expect(gallery.querySelector("[data-gallery-services]")).toHaveAttribute("data-state", "closed");
+      expect(gallery.querySelectorAll('[data-mobile-state="hidden"]').length).toBe(0);
+      const restoringCards = Array.from(
+        gallery.querySelectorAll<HTMLElement>('[data-gallery-restore-state="pending"]')
+      );
+      expect(restoringCards.length).toBeGreaterThan(0);
+      restoringCards.forEach((card) => {
+        expect(card.className).toContain("opacity-0");
+        expect(card.className).toContain("transition-[opacity");
+        expect(card.className).not.toContain("transition-[max-height,flex");
+      });
 
-    fireCarouselPointer("pointerdown", {
-      pointerId: 1,
-      pointerType: "touch",
-      clientX: 220,
-      clientY: 120,
-    });
-    fireCarouselPointer("pointermove", {
-      pointerId: 1,
-      pointerType: "touch",
-      clientX: 120,
-      clientY: 124,
-    });
-    fireCarouselPointer("pointerup", {
-      pointerId: 1,
-      pointerType: "touch",
-      clientX: 120,
-      clientY: 124,
-    });
-    fireEvent.click(slides[0]);
+      act(() => {
+        vi.advanceTimersByTime(80);
+      });
 
-    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
-    expect(slides[0]).toHaveAttribute("tabindex", "-1");
-    expect(slides[1]).toHaveAttribute("tabindex", "0");
+      expect(gallery.querySelector("[data-gallery-motion-stage]")).toHaveAttribute("data-state", "open");
+      expect(gallery.querySelector("[data-gallery-services]")).toHaveAttribute("data-state", "closed");
+      expect(gallery.querySelector("[data-gallery-catalogs]")).toBeInTheDocument();
+      expect(gallery.querySelector("[data-gallery-catalogs]")).toHaveAttribute("data-state", "open");
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 
-    fireCarouselPointer("pointerdown", {
-      pointerId: 2,
-      pointerType: "mouse",
-      button: 0,
-      clientX: 120,
-      clientY: 120,
-    });
-    fireCarouselPointer("pointermove", {
-      pointerId: 2,
-      pointerType: "mouse",
-      button: 0,
-      clientX: 220,
-      clientY: 122,
-    });
-    fireCarouselPointer("pointerup", {
-      pointerId: 2,
-      pointerType: "mouse",
-      button: 0,
-      clientX: 220,
-      clientY: 122,
-    });
+  it("opens result photos or a no-photos state from gallery services", () => {
+    vi.useFakeTimers();
+    const { container } = render(<App />);
+    const gallery = container.querySelector<HTMLElement>("#galeria");
+    expect(gallery).toBeInTheDocument();
+    if (!gallery) return;
 
-    expect(slides[0]).toHaveAttribute("tabindex", "0");
-    expect(slides[1]).toHaveAttribute("tabindex", "-1");
+    fireEvent.click(within(gallery).getByRole("button", { name: /mamas/i }));
+    act(() => {
+      vi.advanceTimersByTime(80);
+    });
+    fireEvent.click(within(gallery).getByRole("button", { name: /aumento de mamas/i }));
+
+    let dialog = screen.getByRole("dialog", { name: /mamoplastia de aumento/i });
+    expect(within(dialog).getByRole("img", { name: /mamoplastia de aumento/i })).toHaveAttribute(
+      "src",
+      expect.stringContaining("mamoplastia-01")
+    );
+    expect(within(dialog).getByText(/1 \/ 4/i)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /cerrar resultados/i }));
+    fireEvent.click(within(gallery).getByRole("button", { name: /reduccion de mamas/i }));
+
+    dialog = screen.getByRole("dialog", { name: /reduccion de mamas/i });
+    expect(within(dialog).getByText(/no hay fotos de casos disponibles/i)).toBeInTheDocument();
+    expect(within(dialog).queryByRole("img")).not.toBeInTheDocument();
   });
 
   it("preloads adjacent modal images when a gallery result opens", async () => {
@@ -452,13 +453,15 @@ describe("landing", () => {
 
     try {
       const { container } = render(<App />);
-      const firstSlide = container.querySelector<HTMLButtonElement>(
-        '[data-result-id="mamoplastia-aumento"]'
-      );
-      expect(firstSlide).toBeInTheDocument();
-      if (!firstSlide) return;
+      const gallery = container.querySelector<HTMLElement>("#galeria");
+      expect(gallery).toBeInTheDocument();
+      if (!gallery) return;
 
-      fireEvent.click(firstSlide);
+      fireEvent.click(within(gallery).getByRole("button", { name: /mamas/i }));
+      await waitFor(() => {
+        expect(within(gallery).getByRole("button", { name: /aumento de mamas/i })).toBeInTheDocument();
+      });
+      fireEvent.click(within(gallery).getByRole("button", { name: /aumento de mamas/i }));
       await screen.findByRole("dialog", { name: /mamoplastia de aumento/i });
 
       await waitFor(() => {
@@ -479,14 +482,17 @@ describe("landing", () => {
   });
 
   it("supports modal image swipe and mouse drag between images", () => {
+    vi.useFakeTimers();
     const { container } = render(<App />);
-    const firstSlide = container.querySelector<HTMLButtonElement>(
-      '[data-result-id="mamoplastia-aumento"]'
-    );
-    expect(firstSlide).toBeInTheDocument();
-    if (!firstSlide) return;
+    const gallery = container.querySelector<HTMLElement>("#galeria");
+    expect(gallery).toBeInTheDocument();
+    if (!gallery) return;
 
-    fireEvent.click(firstSlide);
+    fireEvent.click(within(gallery).getByRole("button", { name: /mamas/i }));
+    act(() => {
+      vi.advanceTimersByTime(80);
+    });
+    fireEvent.click(within(gallery).getByRole("button", { name: /aumento de mamas/i }));
 
     const dialog = screen.getByRole("dialog", { name: /mamoplastia de aumento/i });
     expect(within(dialog).getByText(/1 \/ 4/i)).toBeInTheDocument();
@@ -574,6 +580,7 @@ describe("landing", () => {
   });
 
   it("locks page scroll while the mobile menu or gallery modal is open", () => {
+    vi.useFakeTimers();
     const { container } = render(<App />);
 
     fireEvent.click(screen.getByRole("button", { name: /abrir men/i }));
@@ -584,11 +591,15 @@ describe("landing", () => {
     expect(document.documentElement.style.overflow).toBe("");
     expect(document.body.style.overflow).toBe("");
 
-    const firstSlide = container.querySelector<HTMLButtonElement>("[data-gallery-slide]");
-    expect(firstSlide).toBeInTheDocument();
-    if (!firstSlide) return;
+    const gallery = container.querySelector<HTMLElement>("#galeria");
+    expect(gallery).toBeInTheDocument();
+    if (!gallery) return;
 
-    fireEvent.click(firstSlide);
+    fireEvent.click(within(gallery).getByRole("button", { name: /mamas/i }));
+    act(() => {
+      vi.advanceTimersByTime(80);
+    });
+    fireEvent.click(within(gallery).getByRole("button", { name: /aumento de mamas/i }));
     expect(document.documentElement.style.overflow).toBe("hidden");
     expect(document.body.style.overflow).toBe("hidden");
 

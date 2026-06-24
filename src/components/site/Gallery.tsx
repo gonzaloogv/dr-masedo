@@ -4,14 +4,13 @@ import {
   useMemo,
   useRef,
   useState,
-  type MouseEvent as ReactMouseEvent,
   type PointerEvent as ReactPointerEvent,
-  type ReactNode,
 } from "react";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
+
 import { Reveal } from "@/components/Reveal";
 import { useBodyScrollLock } from "@/hooks/use-body-scroll-lock";
-import { getResultSetById, RESULT_SETS } from "@/lib/results";
+import { getResultSetById, type ResultSet } from "@/lib/results";
 
 export type ResultRequest = {
   resultId: string;
@@ -22,468 +21,511 @@ type GalleryProps = {
   resultRequest?: ResultRequest | null;
 };
 
-type ModalState = {
-  resultId: string;
-  index: number;
+type ModalState =
+  | {
+      type: "result";
+      resultId: string;
+      index: number;
+    }
+  | {
+      type: "empty";
+      catalogName: string;
+      procedure: string;
+    };
+
+type GalleryService = {
+  title: string;
+  description: string;
+  resultId?: string;
 };
 
-type GallerySlide = {
+type GalleryCatalog = {
   id: string;
-  resultId: string;
-  label: string;
-  procedure: string;
-  src: string;
-  alt: string;
-  mobileSrc: string;
-  totalImages: number;
+  name: string;
+  eyebrow: string;
+  description: string;
+  coverResultId?: string;
+  services: GalleryService[];
 };
-
-const AUTOPLAY_DELAY = 4000;
-const DRAG_AXIS_THRESHOLD = 6;
-const DRAG_CLICK_THRESHOLD = 8;
-const DRAG_DISTANCE_THRESHOLD = 48;
-const DRAG_VELOCITY_THRESHOLD = 0.25;
-const RESULT_ORDER = ["mamoplastia-aumento", "abdominoplastia", "pexia-protesis"];
 
 type DragState = {
   pointerId: number;
   startX: number;
   startY: number;
-  startTime: number;
-  axis: "x" | "y" | null;
-  hasDragged: boolean;
-  hasCaptured: boolean;
+  currentX: number;
+  dragging: boolean;
 };
 
-function buildSlides(): GallerySlide[] {
-  return RESULT_ORDER.map((resultId) => {
-    const result = RESULT_SETS.find((item) => item.id === resultId);
-    const coverImage = result?.galleryImages[0];
-    const mobileCoverImage = result?.galleryMobileImage;
-    if (!result || !coverImage || !mobileCoverImage) return null;
+type GalleryViewState = "open" | "selecting" | "selected" | "closing" | "restoring";
 
-    return {
-      id: result.id,
-      resultId: result.id,
-      label: result.label,
-      procedure: result.procedure,
-      src: coverImage.src,
-      alt: coverImage.alt,
-      mobileSrc: mobileCoverImage.src,
-      totalImages: result.modalImages.length,
-    };
-  }).filter((slide): slide is GallerySlide => Boolean(slide));
+const DRAG_THRESHOLD_PX = 36;
+const TAP_TOLERANCE_PX = 8;
+const GALLERY_SELECT_SETTLE_MS = 80;
+const GALLERY_CLOSE_TRANSITION_MS = 260;
+const GALLERY_RESTORE_SETTLE_MS = 80;
+const GALLERY_CATALOGS: GalleryCatalog[] = [
+  {
+    id: "mamas",
+    name: "Mamas",
+    eyebrow: "Cirugia mamaria",
+    description: "Procedimientos de volumen, elevacion y reconstruccion.",
+    coverResultId: "mamoplastia-aumento",
+    services: [
+      {
+        title: "Aumento de mamas",
+        description: "Mamoplastia de aumento con seguimiento fotografico.",
+        resultId: "mamoplastia-aumento",
+      },
+      {
+        title: "Mastopexia",
+        description: "Elevacion mamaria con protesis segun indicacion.",
+        resultId: "pexia-protesis",
+      },
+      {
+        title: "Reduccion de mamas",
+        description: "Casos documentados sujetos a autorizacion.",
+      },
+      {
+        title: "Reconstruccion mamaria",
+        description: "Reconstruccion y simetrizacion segun cada caso.",
+      },
+    ],
+  },
+  {
+    id: "rostro",
+    name: "Rostro",
+    eyebrow: "Cirugia facial",
+    description: "Opciones para armonia facial y rejuvenecimiento.",
+    services: [
+      {
+        title: "Rinoplastia",
+        description: "Resultados disponibles solo con consentimiento.",
+      },
+      {
+        title: "Blefaroplastia",
+        description: "Tratamiento del exceso cutaneo palpebral.",
+      },
+      {
+        title: "Lifting facial",
+        description: "Planificacion personalizada de rejuvenecimiento.",
+      },
+    ],
+  },
+  {
+    id: "cuerpo",
+    name: "Cuerpo",
+    eyebrow: "Contorno corporal",
+    description: "Tratamientos de abdomen, silueta y definicion.",
+    coverResultId: "abdominoplastia",
+    services: [
+      {
+        title: "Abdominoplastia",
+        description: "Resultados de contorno abdominal y reparacion.",
+        resultId: "abdominoplastia",
+      },
+      {
+        title: "Liposuccion",
+        description: "Modelado corporal por zonas seleccionadas.",
+      },
+      {
+        title: "Lipoescultura",
+        description: "Definicion de silueta con plan quirurgico integral.",
+      },
+      {
+        title: "Aumento de gluteos",
+        description: "Procedimiento sujeto a evaluacion anatomica.",
+      },
+    ],
+  },
+  {
+    id: "masculina",
+    name: "Cirugia masculina",
+    eyebrow: "Procedimientos masculinos",
+    description: "Tratamientos frecuentes para contorno y armonia.",
+    services: [
+      {
+        title: "Ginecomastia",
+        description: "Correccion de volumen mamario masculino.",
+      },
+      {
+        title: "Marcacion abdominal",
+        description: "Definicion corporal segun contextura y objetivo.",
+      },
+    ],
+  },
+  {
+    id: "capilar",
+    name: "Capilar",
+    eyebrow: "Restauracion capilar",
+    description: "Alternativas de recuperacion y densidad capilar.",
+    services: [
+      {
+        title: "Implante capilar",
+        description: "Planificacion por zona, densidad y evolucion.",
+      },
+      {
+        title: "Tratamientos capilares",
+        description: "Seguimiento medico segun diagnostico.",
+      },
+    ],
+  },
+];
+
+function getServiceResult(service: GalleryService): ResultSet | null {
+  return service.resultId ? getResultSetById(service.resultId) : null;
+}
+
+function getCatalogCover(catalog: GalleryCatalog) {
+  const resultId =
+    catalog.coverResultId ?? catalog.services.find((service) => service.resultId)?.resultId;
+  const result = resultId ? getResultSetById(resultId) : null;
+  const image = result?.galleryImages[0];
+
+  if (!image) {
+    return null;
+  }
+
+  return {
+    desktop: result?.galleryMobileImage ?? image,
+    mobile: image,
+  };
+}
+
+function getCatalogTone(index: number) {
+  const tones = [
+    "from-darker/94 via-darker/48 to-dark/18",
+    "from-darker/92 via-dark/50 to-copper/20",
+    "from-darker/95 via-darker/52 to-sage/18",
+    "from-dark/92 via-darker/50 to-copper/16",
+    "from-darker/96 via-dark/54 to-sage/16",
+  ];
+
+  return tones[index % tones.length];
 }
 
 export function Gallery({ resultRequest }: GalleryProps) {
-  const slides = useMemo(buildSlides, []);
-  const [activeIndex, setActiveIndex] = useState(0);
+  const [selectedCatalogId, setSelectedCatalogId] = useState<string | null>(null);
+  const [galleryViewState, setGalleryViewState] = useState<GalleryViewState>("open");
+  const [returningCatalogId, setReturningCatalogId] = useState<string | null>(null);
+  const [hoveredCatalogId, setHoveredCatalogId] = useState<string | null>(null);
   const [modal, setModal] = useState<ModalState | null>(null);
-  const [isInView, setIsInView] = useState(false);
-  const [isPaused, setIsPaused] = useState(false);
-  const [isDragging, setIsDragging] = useState(false);
-  const [dragOffset, setDragOffset] = useState(0);
-  const [isModalDragging, setIsModalDragging] = useState(false);
-  const [modalDragOffset, setModalDragOffset] = useState(0);
-  const [reducedMotion, setReducedMotion] = useState(false);
-
-  const sectionRef = useRef<HTMLElement | null>(null);
-  const dialogRef = useRef<HTMLDivElement | null>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
   const closeButtonRef = useRef<HTMLButtonElement | null>(null);
-  const lastFocusedRef = useRef<HTMLElement | null>(null);
-  const preloadedModalImagesRef = useRef<Set<string>>(new Set());
-  const dragStateRef = useRef<DragState | null>(null);
   const modalDragStateRef = useRef<DragState | null>(null);
-  const suppressSlideClickRef = useRef(false);
-  const suppressSlideClickTimerRef = useRef<number | null>(null);
+  const galleryTransitionTimersRef = useRef<number[]>([]);
+  const [modalDragOffset, setModalDragOffset] = useState(0);
+
+  const selectedCatalog = useMemo(
+    () => GALLERY_CATALOGS.find((catalog) => catalog.id === selectedCatalogId) ?? null,
+    [selectedCatalogId],
+  );
+  const activeResult = modal?.type === "result" ? getResultSetById(modal.resultId) : null;
+  const activeImage =
+    activeResult && modal?.type === "result" ? activeResult.modalImages[modal.index] : null;
+  const dialogLabel =
+    modal?.type === "empty"
+      ? `Resultados de ${modal.procedure}`
+      : activeResult
+        ? `Resultados de ${activeResult.procedure}`
+        : "Resultados";
+  const isSelectedLayout =
+    Boolean(selectedCatalog) &&
+    (galleryViewState === "selecting" || galleryViewState === "selected" || galleryViewState === "closing");
+  const catalogPanelState = galleryViewState === "closing" ? "closing" : isSelectedLayout ? "collapsed" : "open";
+  const servicesPanelState =
+    galleryViewState === "closing" ? "closing" : galleryViewState === "selected" ? "open" : "closed";
+  const servicesCatalog = servicesPanelState === "closed" ? null : selectedCatalog;
 
   useBodyScrollLock(Boolean(modal));
 
-  const goToPreviousSlide = useCallback(() => {
-    setActiveIndex((current) => (current - 1 + slides.length) % slides.length);
-  }, [slides.length]);
-
-  const goToNextSlide = useCallback(() => {
-    setActiveIndex((current) => (current + 1) % slides.length);
-  }, [slides.length]);
-
-  const suppressSlideClickBriefly = useCallback(() => {
-    suppressSlideClickRef.current = true;
-    if (suppressSlideClickTimerRef.current) {
-      window.clearTimeout(suppressSlideClickTimerRef.current);
-    }
-    suppressSlideClickTimerRef.current = window.setTimeout(() => {
-      suppressSlideClickRef.current = false;
-      suppressSlideClickTimerRef.current = null;
-    }, 120);
+  const clearGalleryTransitionTimers = useCallback(() => {
+    galleryTransitionTimersRef.current.forEach((timerId) => window.clearTimeout(timerId));
+    galleryTransitionTimersRef.current = [];
   }, []);
 
   const openResult = useCallback((resultId: string, index = 0) => {
-    lastFocusedRef.current =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
-    setModal({ resultId, index });
+    previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setModal({
+      type: "result",
+      resultId,
+      index,
+    });
+    setModalDragOffset(0);
   }, []);
 
-  const handleSlideClick = useCallback(
-    (event: ReactMouseEvent<HTMLButtonElement>, resultId: string) => {
-      if (suppressSlideClickRef.current) {
-        event.preventDefault();
-        event.stopPropagation();
-        return;
-      }
+  const openEmptyService = useCallback((catalog: GalleryCatalog, service: GalleryService) => {
+    previousFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    setModal({
+      type: "empty",
+      catalogName: catalog.name,
+      procedure: service.title,
+    });
+    setModalDragOffset(0);
+  }, []);
 
-      openResult(resultId, 0);
-    },
-    [openResult]
-  );
-
-  const close = useCallback(() => {
+  const closeModal = useCallback(() => {
     setModal(null);
-    requestAnimationFrame(() => lastFocusedRef.current?.focus());
-  }, []);
-
-  const navigateModal = useCallback((direction: "prev" | "next") => {
-    setModal((current) => {
-      if (!current) return current;
-
-      const result = getResultSetById(current.resultId);
-      const total = result?.modalImages.length ?? 0;
-      if (!total) return current;
-
-      const index =
-        direction === "prev"
-          ? (current.index - 1 + total) % total
-          : (current.index + 1) % total;
-      return { ...current, index };
+    setModalDragOffset(0);
+    modalDragStateRef.current = null;
+    window.requestAnimationFrame(() => {
+      previousFocusRef.current?.focus();
+      previousFocusRef.current = null;
     });
   }, []);
 
-  const handleGalleryPointerDown = useCallback(
-    (event: ReactPointerEvent<HTMLDivElement>) => {
-      if (modal || slides.length <= 1) return;
-      if (event.isPrimary === false) return;
-      if (event.pointerType === "mouse" && event.button !== 0) return;
+  const navigateModal = useCallback((direction: 1 | -1) => {
+    setModal((current) => {
+      if (!current || current.type !== "result") {
+        return current;
+      }
 
-      dragStateRef.current = {
-        pointerId: event.pointerId,
-        startX: event.clientX,
-        startY: event.clientY,
-        startTime: Date.now(),
-        axis: null,
-        hasDragged: false,
-        hasCaptured: false,
+      const result = getResultSetById(current.resultId);
+
+      if (!result || result.modalImages.length <= 1) {
+        return current;
+      }
+
+      return {
+        ...current,
+        index: (current.index + direction + result.modalImages.length) % result.modalImages.length,
       };
-      setIsDragging(true);
-      setDragOffset(0);
-    },
-    [modal, slides.length]
-  );
-
-  const handleGalleryPointerMove = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
-    const dragState = dragStateRef.current;
-    if (!dragState || dragState.pointerId !== event.pointerId) return;
-
-    const deltaX = event.clientX - dragState.startX;
-    const deltaY = event.clientY - dragState.startY;
-    const absX = Math.abs(deltaX);
-    const absY = Math.abs(deltaY);
-
-    if (dragState.axis === null && Math.max(absX, absY) <= DRAG_AXIS_THRESHOLD) {
-      return;
-    }
-
-    if (dragState.axis === null) {
-      dragState.axis = absX >= absY ? "x" : "y";
-    }
-
-    if (dragState.axis === "y") return;
-    if (!dragState.hasCaptured) {
-      event.currentTarget.setPointerCapture?.(event.pointerId);
-      dragState.hasCaptured = true;
-    }
-    if (absX > DRAG_CLICK_THRESHOLD) {
-      dragState.hasDragged = true;
-      suppressSlideClickRef.current = true;
-    }
-
-    event.preventDefault();
-    setDragOffset(deltaX);
-  }, []);
-
-  const handleGalleryPointerUp = useCallback(
-    (event: ReactPointerEvent<HTMLDivElement>) => {
-      const dragState = dragStateRef.current;
-      if (!dragState || dragState.pointerId !== event.pointerId) return;
-
-      try {
-        event.currentTarget.releasePointerCapture?.(event.pointerId);
-      } catch {
-        // Pointer capture can already be gone if the browser cancelled the gesture.
-      }
-
-      dragStateRef.current = null;
-      setIsDragging(false);
-      setDragOffset(0);
-
-      const deltaX = event.clientX - dragState.startX;
-      const elapsed = Math.max(1, Date.now() - dragState.startTime);
-      const velocity = Math.abs(deltaX) / elapsed;
-      const didDrag =
-        dragState.hasDragged ||
-        (dragState.axis !== "y" && Math.abs(deltaX) > DRAG_CLICK_THRESHOLD);
-
-      if (didDrag) {
-        suppressSlideClickBriefly();
-      }
-
-      if (
-        dragState.axis !== "y" &&
-        (Math.abs(deltaX) >= DRAG_DISTANCE_THRESHOLD || velocity >= DRAG_VELOCITY_THRESHOLD)
-      ) {
-        if (deltaX < 0) {
-          goToNextSlide();
-        } else {
-          goToPreviousSlide();
-        }
-      }
-    },
-    [goToNextSlide, goToPreviousSlide, suppressSlideClickBriefly]
-  );
-
-  const handleGalleryPointerCancel = useCallback((event: ReactPointerEvent<HTMLDivElement>) => {
-    const dragState = dragStateRef.current;
-    if (!dragState || dragState.pointerId !== event.pointerId) return;
-
-    try {
-      event.currentTarget.releasePointerCapture?.(event.pointerId);
-    } catch {
-      // Pointer capture can already be gone if the browser cancelled the gesture.
-    }
-
-    if (dragState.hasDragged) {
-      suppressSlideClickBriefly();
-    }
-    dragStateRef.current = null;
-    setIsDragging(false);
-    setDragOffset(0);
-  }, [suppressSlideClickBriefly]);
-
-  const handleModalPointerDown = useCallback(
-    (event: ReactPointerEvent<HTMLImageElement>) => {
-      if (!modal) return;
-      if (event.isPrimary === false) return;
-      if (event.pointerType === "mouse" && event.button !== 0) return;
-
-      const result = getResultSetById(modal.resultId);
-      if ((result?.modalImages.length ?? 0) <= 1) return;
-
-      modalDragStateRef.current = {
-        pointerId: event.pointerId,
-        startX: event.clientX,
-        startY: event.clientY,
-        startTime: Date.now(),
-        axis: null,
-        hasDragged: false,
-        hasCaptured: false,
-      };
-      setIsModalDragging(true);
-      setModalDragOffset(0);
-    },
-    [modal]
-  );
-
-  const handleModalPointerMove = useCallback((event: ReactPointerEvent<HTMLImageElement>) => {
-    const dragState = modalDragStateRef.current;
-    if (!dragState || dragState.pointerId !== event.pointerId) return;
-
-    const deltaX = event.clientX - dragState.startX;
-    const deltaY = event.clientY - dragState.startY;
-    const absX = Math.abs(deltaX);
-    const absY = Math.abs(deltaY);
-
-    if (dragState.axis === null && Math.max(absX, absY) <= DRAG_AXIS_THRESHOLD) {
-      return;
-    }
-
-    if (dragState.axis === null) {
-      dragState.axis = absX >= absY ? "x" : "y";
-    }
-
-    if (dragState.axis === "y") return;
-    if (!dragState.hasCaptured) {
-      event.currentTarget.setPointerCapture?.(event.pointerId);
-      dragState.hasCaptured = true;
-    }
-    if (absX > DRAG_CLICK_THRESHOLD) {
-      dragState.hasDragged = true;
-    }
-
-    event.preventDefault();
-    setModalDragOffset(deltaX);
-  }, []);
-
-  const handleModalPointerUp = useCallback(
-    (event: ReactPointerEvent<HTMLImageElement>) => {
-      const dragState = modalDragStateRef.current;
-      if (!dragState || dragState.pointerId !== event.pointerId) return;
-
-      try {
-        event.currentTarget.releasePointerCapture?.(event.pointerId);
-      } catch {
-        // Pointer capture can already be gone if the browser cancelled the gesture.
-      }
-
-      modalDragStateRef.current = null;
-      setIsModalDragging(false);
-      setModalDragOffset(0);
-
-      const deltaX = event.clientX - dragState.startX;
-      const elapsed = Math.max(1, Date.now() - dragState.startTime);
-      const velocity = Math.abs(deltaX) / elapsed;
-      const didDrag =
-        dragState.hasDragged ||
-        (dragState.axis !== "y" && Math.abs(deltaX) > DRAG_CLICK_THRESHOLD);
-
-      if (
-        dragState.axis !== "y" &&
-        didDrag &&
-        (Math.abs(deltaX) >= DRAG_DISTANCE_THRESHOLD || velocity >= DRAG_VELOCITY_THRESHOLD)
-      ) {
-        navigateModal(deltaX < 0 ? "next" : "prev");
-      }
-    },
-    [navigateModal]
-  );
-
-  const handleModalPointerCancel = useCallback((event: ReactPointerEvent<HTMLImageElement>) => {
-    const dragState = modalDragStateRef.current;
-    if (!dragState || dragState.pointerId !== event.pointerId) return;
-
-    try {
-      event.currentTarget.releasePointerCapture?.(event.pointerId);
-    } catch {
-      // Pointer capture can already be gone if the browser cancelled the gesture.
-    }
-
-    modalDragStateRef.current = null;
-    setIsModalDragging(false);
+    });
     setModalDragOffset(0);
   }, []);
 
   useEffect(() => {
-    const mediaQuery = window.matchMedia?.("(prefers-reduced-motion: reduce)");
-    const updatePreference = () => setReducedMotion(Boolean(mediaQuery?.matches));
-
-    updatePreference();
-    mediaQuery?.addEventListener?.("change", updatePreference);
-    return () => mediaQuery?.removeEventListener?.("change", updatePreference);
-  }, []);
-
-  useEffect(() => {
-    const section = sectionRef.current;
-    if (!section || typeof IntersectionObserver === "undefined") {
-      setIsInView(true);
+    if (!resultRequest?.resultId) {
       return;
     }
 
-    const observer = new IntersectionObserver(
-      ([entry]) => setIsInView(entry.isIntersecting),
-      { threshold: 0.35 }
-    );
-    observer.observe(section);
-    return () => observer.disconnect();
-  }, []);
+    const targetResult = getResultSetById(resultRequest.resultId);
 
-  useEffect(() => {
-    if (!resultRequest) return;
-    openResult(resultRequest.resultId, 0);
-  }, [openResult, resultRequest]);
-
-  useEffect(() => () => {
-    if (suppressSlideClickTimerRef.current) {
-      window.clearTimeout(suppressSlideClickTimerRef.current);
+    if (!targetResult) {
+      return;
     }
-  }, []);
+
+    const catalogWithResult = GALLERY_CATALOGS.find((catalog) =>
+      catalog.services.some((service) => service.resultId === resultRequest.resultId),
+    );
+
+    if (catalogWithResult) {
+      clearGalleryTransitionTimers();
+      setSelectedCatalogId(catalogWithResult.id);
+      setReturningCatalogId(null);
+      setGalleryViewState("selected");
+    }
+
+    openResult(resultRequest.resultId, 0);
+  }, [clearGalleryTransitionTimers, openResult, resultRequest]);
+
+  useEffect(() => clearGalleryTransitionTimers, [clearGalleryTransitionTimers]);
 
   useEffect(() => {
-    if (!isInView || isPaused || isDragging || modal || reducedMotion || slides.length <= 1) return;
+    if (!modal) {
+      return undefined;
+    }
 
-    const interval = window.setInterval(goToNextSlide, AUTOPLAY_DELAY);
-    return () => window.clearInterval(interval);
-  }, [goToNextSlide, isDragging, isInView, isPaused, modal, reducedMotion, slides.length]);
+    closeButtonRef.current?.focus();
 
-  useEffect(() => {
-    if (!modal) return;
-
-    const onKey = (event: KeyboardEvent) => {
+    const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
-        close();
-      } else if (event.key === "ArrowLeft") {
-        navigateModal("prev");
-      } else if (event.key === "ArrowRight") {
-        navigateModal("next");
-      } else if (event.key === "Tab" && dialogRef.current) {
-        const focusable = Array.from(
-          dialogRef.current.querySelectorAll<HTMLElement>(
-            "button, [href], [tabindex]:not([tabindex='-1'])"
-          )
-        ).filter((element) => !element.hasAttribute("disabled"));
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-        if (!first || !last) return;
-        if (event.shiftKey && document.activeElement === first) {
-          event.preventDefault();
-          last.focus();
-        } else if (!event.shiftKey && document.activeElement === last) {
-          event.preventDefault();
-          first.focus();
-        }
+        event.preventDefault();
+        closeModal();
+        return;
+      }
+
+      if (event.key === "ArrowRight" && modal.type === "result") {
+        event.preventDefault();
+        navigateModal(1);
+        return;
+      }
+
+      if (event.key === "ArrowLeft" && modal.type === "result") {
+        event.preventDefault();
+        navigateModal(-1);
+        return;
+      }
+
+      if (event.key !== "Tab") {
+        return;
+      }
+
+      const focusable = Array.from(
+        document.querySelectorAll<HTMLElement>(
+          '[data-gallery-modal] button:not([disabled]), [data-gallery-modal] [href], [data-gallery-modal] [tabindex]:not([tabindex="-1"])',
+        ),
+      ).filter((element) => !element.hasAttribute("disabled") && !element.getAttribute("aria-hidden"));
+
+      if (focusable.length === 0) {
+        event.preventDefault();
+        return;
+      }
+
+      const firstElement = focusable[0];
+      const lastElement = focusable[focusable.length - 1];
+
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault();
+        lastElement.focus();
+        return;
+      }
+
+      if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault();
+        firstElement.focus();
       }
     };
 
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [close, modal, navigateModal]);
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [closeModal, modal, navigateModal]);
 
   useEffect(() => {
-    if (modal) closeButtonRef.current?.focus();
-  }, [modal]);
+    if (!activeResult || modal?.type !== "result" || activeResult.modalImages.length <= 1) {
+      return;
+    }
 
-  useEffect(() => {
-    if (!modal || typeof Image === "undefined") return;
+    const previousImage =
+      activeResult.modalImages[
+        (modal.index - 1 + activeResult.modalImages.length) % activeResult.modalImages.length
+      ];
+    const nextImage = activeResult.modalImages[(modal.index + 1) % activeResult.modalImages.length];
 
-    const result = getResultSetById(modal.resultId);
-    const images = result?.modalImages ?? [];
-    if (images.length <= 1) return;
-
-    const adjacentIndexes = new Set([
-      (modal.index - 1 + images.length) % images.length,
-      (modal.index + 1) % images.length,
-    ]);
-
-    adjacentIndexes.forEach((index) => {
-      const src = images[index]?.src;
-      if (!src || preloadedModalImagesRef.current.has(src)) return;
-
-      preloadedModalImagesRef.current.add(src);
-      const image = new Image();
-      image.decoding = "async";
-      image.src = src;
+    [previousImage, nextImage].forEach((image) => {
+      const preload = new Image();
+      preload.src = image.src;
     });
-  }, [modal]);
+  }, [activeResult, modal]);
 
-  const activeResult = modal ? getResultSetById(modal.resultId) : null;
-  const activeImage = activeResult?.modalImages[modal?.index ?? 0] ?? null;
+  const handleCatalogSelect = (catalog: GalleryCatalog) => {
+    clearGalleryTransitionTimers();
+    setSelectedCatalogId(catalog.id);
+    setReturningCatalogId(null);
+    setGalleryViewState("selecting");
+    setHoveredCatalogId(null);
+
+    const selectTimer = window.setTimeout(() => {
+      setGalleryViewState("selected");
+    }, GALLERY_SELECT_SETTLE_MS);
+
+    galleryTransitionTimersRef.current.push(selectTimer);
+  };
+
+  const handleSelectedCatalogReturn = (catalog: GalleryCatalog) => {
+    clearGalleryTransitionTimers();
+    setHoveredCatalogId(null);
+    setReturningCatalogId(catalog.id);
+    setGalleryViewState("closing");
+
+    const restoreTimer = window.setTimeout(() => {
+      setSelectedCatalogId(null);
+      setGalleryViewState("restoring");
+
+      const openTimer = window.setTimeout(() => {
+        setGalleryViewState("open");
+        setReturningCatalogId(null);
+      }, GALLERY_RESTORE_SETTLE_MS);
+
+      galleryTransitionTimersRef.current.push(openTimer);
+    }, GALLERY_CLOSE_TRANSITION_MS);
+
+    galleryTransitionTimersRef.current.push(restoreTimer);
+  };
+
+  const handleServiceSelect = (catalog: GalleryCatalog, service: GalleryService) => {
+    const result = getServiceResult(service);
+
+    if (result) {
+      openResult(result.id, 0);
+      return;
+    }
+
+    openEmptyService(catalog, service);
+  };
+
+  const handleModalPointerDown = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (!activeResult || modal?.type !== "result" || activeResult.modalImages.length <= 1) {
+      return;
+    }
+
+    modalDragStateRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      currentX: event.clientX,
+      dragging: false,
+    };
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  };
+
+  const handleModalPointerMove = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const dragState = modalDragStateRef.current;
+
+    if (!dragState || dragState.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const deltaX = event.clientX - dragState.startX;
+    const deltaY = event.clientY - dragState.startY;
+
+    if (!dragState.dragging) {
+      if (Math.abs(deltaX) < TAP_TOLERANCE_PX && Math.abs(deltaY) < TAP_TOLERANCE_PX) {
+        return;
+      }
+
+      if (Math.abs(deltaY) > Math.abs(deltaX)) {
+        modalDragStateRef.current = null;
+        setModalDragOffset(0);
+        return;
+      }
+
+      dragState.dragging = true;
+    }
+
+    dragState.currentX = event.clientX;
+    setModalDragOffset(deltaX);
+  };
+
+  const handleModalPointerUp = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const dragState = modalDragStateRef.current;
+
+    if (!dragState || dragState.pointerId !== event.pointerId) {
+      return;
+    }
+
+    const deltaX = dragState.currentX - dragState.startX;
+
+    modalDragStateRef.current = null;
+    event.currentTarget.releasePointerCapture?.(event.pointerId);
+
+    if (dragState.dragging && Math.abs(deltaX) >= DRAG_THRESHOLD_PX) {
+      navigateModal(deltaX < 0 ? 1 : -1);
+      return;
+    }
+
+    setModalDragOffset(0);
+  };
+
+  const handleModalPointerCancel = (event: ReactPointerEvent<HTMLDivElement>) => {
+    const dragState = modalDragStateRef.current;
+
+    if (!dragState || dragState.pointerId !== event.pointerId) {
+      return;
+    }
+
+    modalDragStateRef.current = null;
+    setModalDragOffset(0);
+  };
 
   return (
     <section
-      ref={sectionRef}
-      id="galeria"
       aria-labelledby="galeria-title"
       className="overflow-x-hidden bg-dark py-20 md:py-28 lg:py-32"
+      id="galeria"
     >
       <div className="mx-auto max-w-7xl px-6 lg:px-12">
-        <Reveal preset="section" delay={0}>
+        <Reveal delay={0} preset="section">
           <div className="mb-12 text-center lg:mb-14">
             <div className="mb-4 flex items-center justify-center gap-4">
               <span className="h-px w-12 bg-copper opacity-40" />
@@ -492,7 +534,7 @@ export function Gallery({ resultRequest }: GalleryProps) {
               </span>
               <span className="h-px w-12 bg-copper opacity-40" />
             </div>
-            <h2 id="galeria-title" className="h-display-light text-white">
+            <h2 className="h-display-light text-white" id="galeria-title">
               Galería de <span className="text-sage">trabajos</span>
             </h2>
             <p className="mx-auto mt-4 max-w-xl font-sans text-[0.9rem] leading-[1.8] text-white/75">
@@ -502,252 +544,456 @@ export function Gallery({ resultRequest }: GalleryProps) {
           </div>
         </Reveal>
 
-        <Reveal preset="media" clip={false} delay={80}>
+        <Reveal className="mt-12">
           <div
-            data-gallery-carousel
-            data-autoplay-interval={AUTOPLAY_DELAY}
-            className="relative mx-auto aspect-[3/4] w-full max-w-6xl bg-darker/40 shadow-[0_28px_90px_rgba(0,0,0,0.24)] md:aspect-[3/2]"
-            onMouseEnter={() => setIsPaused(true)}
-            onMouseLeave={() => setIsPaused(false)}
-            onFocus={() => setIsPaused(true)}
-            onBlur={() => setIsPaused(false)}
+            className={`grid transition-[gap] duration-[450ms] ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none ${
+              isSelectedLayout ? "gap-5 lg:grid-cols-[minmax(210px,280px)_1fr] lg:items-stretch" : "gap-0"
+            }`}
+            data-gallery-motion-stage
+            data-state={galleryViewState}
           >
             <div
-              data-gallery-gesture
-              className="h-full overflow-hidden touch-pan-y cursor-grab active:cursor-grabbing"
-              onPointerDown={handleGalleryPointerDown}
-              onPointerMove={handleGalleryPointerMove}
-              onPointerUp={handleGalleryPointerUp}
-              onPointerCancel={handleGalleryPointerCancel}
+              className={`flex flex-col overflow-hidden opacity-100 transition-[max-height,opacity,transform,gap] duration-[450ms] ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none lg:h-[460px] lg:max-h-none lg:flex-row lg:gap-2 ${
+                isSelectedLayout ? "max-h-[260px] gap-0" : "max-h-[1400px] gap-3"
+              }`}
+              data-gallery-catalogs
+              data-gallery-mobile-collapse
+              data-state={catalogPanelState}
             >
-              <div
-                data-carousel-track
-                className={[
-                  "flex h-full",
-                  isDragging
-                    ? ""
-                    : "transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)]",
-                ].join(" ")}
-                style={{ transform: `translateX(calc(-${activeIndex * 100}% + ${dragOffset}px))` }}
-              >
-                {slides.map((slide, index) => {
-                  const isActiveSlide = index === activeIndex;
+              {GALLERY_CATALOGS.map((catalog, index) => {
+                const isSelected = isSelectedLayout && selectedCatalog?.id === catalog.id;
+                const activeCatalogId =
+                  galleryViewState === "open"
+                    ? hoveredCatalogId
+                    : isSelectedLayout
+                      ? selectedCatalogId
+                      : null;
 
-                  return (
-                  <button
-                    key={slide.id}
-                    type="button"
-                    data-gallery-slide
-                    data-result-id={slide.resultId}
-                    tabIndex={isActiveSlide ? 0 : -1}
-                    aria-hidden={!isActiveSlide}
-                    className="group relative h-full min-w-full overflow-hidden text-left focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-sage"
-                    onClick={(event) => handleSlideClick(event, slide.resultId)}
-                    aria-label={`${slide.label} - ${slide.procedure}`}
-                  >
-                    <picture className="block h-full w-full">
-                      <source media="(max-width: 767px)" srcSet={slide.mobileSrc} />
-                      <img
-                        src={slide.src}
-                        alt={slide.alt}
-                        className="h-full w-full select-none object-cover transition-transform duration-500 ease-[cubic-bezier(0.23,1,0.32,1)] group-hover:scale-[1.012]"
-                        draggable={false}
-                        loading={slide.id === slides[0]?.id ? "eager" : "lazy"}
-                      />
-                    </picture>
-                    <SlideOverlay slide={slide} />
-                  </button>
-                  );
-                })}
-              </div>
+                return (
+                  <CatalogCard
+                    key={catalog.id}
+                    catalog={catalog}
+                    index={index}
+                    isExpanded={activeCatalogId ? activeCatalogId === catalog.id : false}
+                    isSelecting={galleryViewState === "selecting"}
+                    isRestoring={galleryViewState === "restoring"}
+                    isReturning={galleryViewState === "restoring" && returningCatalogId === catalog.id}
+                    isSelected={isSelected}
+                    isSelectedMode={isSelectedLayout}
+                    isTransitioning={galleryViewState !== "open"}
+                    onClick={() => {
+                      if (galleryViewState === "selected" && isSelected && selectedCatalog) {
+                        handleSelectedCatalogReturn(selectedCatalog);
+                        return;
+                      }
+
+                      if (galleryViewState !== "open") {
+                        return;
+                      }
+
+                      handleCatalogSelect(catalog);
+                    }}
+                    onMouseEnter={() => {
+                      if (galleryViewState === "open") {
+                        setHoveredCatalogId(catalog.id);
+                      }
+                    }}
+                    onMouseLeave={() => setHoveredCatalogId(null)}
+                    onFocus={() => {
+                      if (galleryViewState === "open") {
+                        setHoveredCatalogId(catalog.id);
+                      }
+                    }}
+                    onBlur={() => setHoveredCatalogId((current) => (current === catalog.id ? null : current))}
+                  />
+                );
+              })}
             </div>
 
-            <GalleryArrowButton onClick={goToPreviousSlide} side="left" ariaLabel="Ver resultado anterior">
-              <ChevronLeft size={28} />
-            </GalleryArrowButton>
-
-            <GalleryArrowButton onClick={goToNextSlide} side="right" ariaLabel="Ver resultado siguiente">
-              <ChevronRight size={28} />
-            </GalleryArrowButton>
-
+            <div
+              aria-hidden={servicesPanelState === "open" ? undefined : true}
+              className={`grid overflow-hidden transition-[grid-template-rows,max-height,opacity,transform] duration-[420ms] ease-[cubic-bezier(0.23,1,0.32,1)] motion-reduce:transition-none ${
+                servicesPanelState === "open"
+                  ? "grid-rows-[1fr] max-h-[1200px] translate-y-0 opacity-100"
+                  : servicesPanelState === "closing"
+                    ? "pointer-events-none grid-rows-[0fr] max-h-[1200px] translate-y-1 opacity-0"
+                    : "pointer-events-none grid-rows-[0fr] max-h-0 translate-y-3 opacity-0"
+              }`}
+              data-gallery-services
+              data-state={servicesPanelState}
+            >
+              <div className="min-h-0 overflow-hidden">
+                {servicesCatalog ? (
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {servicesCatalog.services.map((service) => (
+                      <ServiceCard
+                        key={service.title}
+                        service={service}
+                        onClick={() => handleServiceSelect(servicesCatalog, service)}
+                      />
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            </div>
           </div>
         </Reveal>
 
-        <div
-          className="mx-auto mt-10 flex max-w-6xl items-start gap-4 p-6"
-          style={{
-            backgroundColor: "hsl(var(--brand-forest-2) / 0.2)",
-            borderLeft: "2px solid hsl(var(--brand-forest-2))",
-          }}
+        <Reveal
+          className="mx-auto mt-10 flex max-w-6xl items-start gap-4 border-l-2 border-sage/70 bg-sage/10 p-6"
         >
-          <span className="text-[1.4rem] leading-none text-sage" aria-hidden="true">
+          <span aria-hidden="true" className="text-[1.4rem] leading-none text-sage">
             i
           </span>
           <p className="font-sans text-sm leading-[1.7] text-white/75">
             Las fotografías clínicas disponibles se publican con consentimiento informado. Los
             resultados individuales pueden variar según el estado de salud, la anatomía y el
-            seguimiento post-operatorio de cada caso.
+            proceso de recuperación de cada paciente.
           </p>
-        </div>
+        </Reveal>
       </div>
 
-      {activeResult && activeImage && (
+      {modal ? (
         <div
-          ref={dialogRef}
-          role="dialog"
+          aria-label={dialogLabel}
           aria-modal="true"
-          aria-label={`Resultados de ${activeResult.procedure}`}
           className="fixed inset-0 z-50 flex items-center justify-center bg-darker/95 p-4 backdrop-blur-sm"
-          onClick={close}
+          data-gallery-modal
+          onClick={closeModal}
+          role="dialog"
         >
-          <button
-            ref={closeButtonRef}
-            type="button"
-            className="absolute right-5 top-5 z-10 flex h-11 w-11 items-center justify-center text-white/75 transition-colors duration-150 hover:text-white active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sage md:right-6 md:top-6"
-            onClick={(event) => {
-              event.stopPropagation();
-              close();
-            }}
-            aria-label="Cerrar resultados"
-          >
-            <X size={28} />
-          </button>
-
-          {activeResult.modalImages.length > 1 && (
-            <>
-              <button
-                type="button"
-                className="absolute left-4 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center text-white/75 transition-colors duration-150 hover:text-white active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sage md:left-6"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  navigateModal("prev");
-                }}
-                aria-label={`Foto anterior de ${activeResult.procedure}`}
-              >
-                <ChevronLeft size={34} />
-              </button>
-              <button
-                type="button"
-                className="absolute right-4 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center text-white/75 transition-colors duration-150 hover:text-white active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sage md:right-6"
-                onClick={(event) => {
-                  event.stopPropagation();
-                  navigateModal("next");
-                }}
-                aria-label={`Siguiente foto de ${activeResult.procedure}`}
-              >
-                <ChevronRight size={34} />
-              </button>
-            </>
-          )}
-
           <div
-            className="flex max-h-[92vh] w-full max-w-5xl flex-col items-center"
+            className="relative flex max-h-[92vh] w-full max-w-5xl flex-col items-center"
             onClick={(event) => event.stopPropagation()}
           >
-            <div className="mb-4 text-center">
-              <p className="font-sans text-2xs uppercase tracking-brand-widest text-sage">
-                {activeResult.label}
-              </p>
-              <h3 className="mt-1 font-serif text-2xl leading-tight text-white md:text-3xl">
-                {activeResult.procedure}
-              </h3>
-              <p className="mt-2 font-sans text-xs uppercase tracking-[0.16em] text-white/55">
-                {modal.index + 1} / {activeResult.modalImages.length}
-              </p>
-            </div>
+            <button
+              aria-label="Cerrar resultados"
+              className="absolute right-5 top-5 z-10 flex h-11 w-11 items-center justify-center text-white/75 transition-colors duration-150 hover:text-white active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sage md:right-6 md:top-6"
+              onClick={closeModal}
+              ref={closeButtonRef}
+              type="button"
+            >
+              <X className="h-5 w-5" />
+            </button>
 
-            <img
-              data-modal-gesture
-              src={activeImage.src}
-              alt={activeImage.alt}
-              className={[
-                "max-h-[72vh] max-w-[88vw] touch-pan-y cursor-grab select-none object-contain active:cursor-grabbing",
-                isModalDragging
-                  ? ""
-                  : "transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]",
-              ].join(" ")}
-              style={{ transform: `translateX(${modalDragOffset}px)` }}
-              draggable={false}
-              onPointerDown={handleModalPointerDown}
-              onPointerMove={handleModalPointerMove}
-              onPointerUp={handleModalPointerUp}
-              onPointerCancel={handleModalPointerCancel}
-            />
-            <p className="mt-4 max-w-md px-4 text-center font-sans text-xs leading-[1.7] text-white/65">
-              Las fotografías se publican con consentimiento informado del paciente. Los resultados
-              individuales pueden variar.
-            </p>
+            {modal.type === "result" && activeResult && activeImage ? (
+              <>
+                <div className="mb-4 px-12 text-center">
+                  <p className="font-sans text-2xs uppercase tracking-brand-widest text-sage">
+                    {activeResult.label}
+                  </p>
+                  <h3 className="mt-1 font-serif text-2xl leading-tight text-white md:text-3xl">
+                    {activeResult.procedure}
+                  </h3>
+                  <p className="mt-2 font-sans text-xs uppercase tracking-[0.16em] text-white/55">
+                    {modal.index + 1} / {activeResult.modalImages.length}
+                  </p>
+                </div>
+
+                <div className="relative flex w-full items-center justify-center">
+                  <div
+                    aria-label="Imagen de resultado"
+                    className="flex max-h-[72vh] max-w-[88vw] touch-pan-y cursor-grab select-none items-center justify-center active:cursor-grabbing"
+                    data-modal-gesture
+                    onPointerCancel={handleModalPointerCancel}
+                    onPointerDown={handleModalPointerDown}
+                    onPointerMove={handleModalPointerMove}
+                    onPointerUp={handleModalPointerUp}
+                    role="presentation"
+                  >
+                    <img
+                      alt={activeImage.alt}
+                      className="max-h-[72vh] max-w-[88vw] object-contain transition-transform duration-200 ease-out"
+                      draggable={false}
+                      loading="eager"
+                      src={activeImage.src}
+                      style={{
+                        transform: `translateX(${modalDragOffset}px)`,
+                      }}
+                    />
+                  </div>
+
+                  {activeResult.modalImages.length > 1 ? (
+                    <>
+                      <button
+                        aria-label="Imagen anterior"
+                        className="absolute left-4 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center text-white/75 transition-colors duration-150 hover:text-white active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sage md:left-6"
+                        onClick={() => navigateModal(-1)}
+                        type="button"
+                      >
+                        <ChevronLeft className="h-5 w-5" />
+                      </button>
+                      <button
+                        aria-label="Imagen siguiente"
+                        className="absolute right-4 top-1/2 z-10 flex h-12 w-12 -translate-y-1/2 items-center justify-center text-white/75 transition-colors duration-150 hover:text-white active:scale-[0.97] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sage md:right-6"
+                        onClick={() => navigateModal(1)}
+                        type="button"
+                      >
+                        <ChevronRight className="h-5 w-5" />
+                      </button>
+                    </>
+                  ) : null}
+                </div>
+
+                <p className="mt-4 max-w-md px-4 text-center font-sans text-xs leading-[1.7] text-white/65">
+                  Las fotografías se publican con consentimiento informado del paciente. Los
+                  resultados individuales pueden variar.
+                </p>
+              </>
+            ) : null}
+
+            {modal.type === "empty" ? (
+              <div className="grid min-h-[360px] place-items-center px-4 py-10 text-center">
+                <div className="max-w-md">
+                  <p className="font-sans text-2xs uppercase tracking-brand-widest text-sage">
+                    {modal.catalogName}
+                  </p>
+                  <h3 className="mt-1 font-serif text-2xl leading-tight text-white md:text-3xl">
+                    {modal.procedure}
+                  </h3>
+                  <div className="mx-auto mt-8 flex h-20 w-20 items-center justify-center rounded-full border border-dashed border-sage/45 bg-dark/70 font-sans text-2xs uppercase tracking-brand-tight text-sage">
+                    Sin fotos
+                  </div>
+                  <p className="mt-6 font-sans text-sm leading-[1.7] text-white/75">
+                    No hay fotos de casos disponibles para este servicio.
+                  </p>
+                </div>
+              </div>
+            ) : null}
           </div>
         </div>
-      )}
+      ) : null}
     </section>
   );
 }
 
-function GalleryArrowButton({
-  onClick,
-  children,
-  side,
-  ariaLabel,
-}: {
+type CatalogCardProps = {
+  catalog: GalleryCatalog;
+  index: number;
+  isExpanded: boolean;
+  isSelecting: boolean;
+  isRestoring: boolean;
+  isReturning: boolean;
+  isSelected: boolean;
+  isSelectedMode: boolean;
+  isTransitioning: boolean;
+  onBlur: () => void;
   onClick: () => void;
-  children: ReactNode;
-  side: "left" | "right";
-  ariaLabel: string;
-}) {
+  onFocus: () => void;
+  onMouseEnter: () => void;
+  onMouseLeave: () => void;
+};
+
+function CatalogCard({
+  catalog,
+  index,
+  isExpanded,
+  isSelecting,
+  isRestoring,
+  isReturning,
+  isSelected,
+  isSelectedMode,
+  isTransitioning,
+  onBlur,
+  onClick,
+  onFocus,
+  onMouseEnter,
+  onMouseLeave,
+}: CatalogCardProps) {
+  const cover = getCatalogCover(catalog);
+  const serviceCount = catalog.services.length;
+  const isHiddenInSelectedMode = isSelectedMode && !isSelected;
+  const isRestoringHidden = isRestoring && !isReturning;
+  const isSelectingHidden = isSelecting && isHiddenInSelectedMode;
+  const mobileState = isSelectedMode && !isSelected ? "hidden" : "visible";
+  const desktopFlexClass = isHiddenInSelectedMode
+    ? "lg:w-0 lg:flex-none"
+    : isExpanded
+      ? "lg:flex-[2.15_1_0%]"
+      : "lg:flex-[0.76_1_0%]";
+  const interactionClass = isTransitioning
+    ? "hover:border-sage/60"
+    : "hover:-translate-y-0.5 hover:border-sage/60";
+  const transitionClass = isRestoring
+    ? "transition-[opacity,border-color,transform,filter] duration-[220ms]"
+    : isSelectingHidden
+      ? "transition-[max-height,opacity,border-color,transform,filter] duration-[260ms]"
+    : "transition-[max-height,flex,filter,opacity,transform,border-color,width] duration-[420ms]";
+  const visibilityClass = isHiddenInSelectedMode
+    ? "max-h-0 min-h-0 basis-0 border-0 opacity-0 pointer-events-none lg:max-h-0 lg:min-h-0"
+    : isRestoringHidden
+      ? "max-h-[260px] opacity-0 pointer-events-none lg:max-h-none"
+      : "max-h-[260px] opacity-100 lg:max-h-none";
+  const imageMotionClass = isTransitioning ? "" : "group-hover:scale-[1.035]";
+
   return (
     <button
-      type="button"
+      aria-label={catalog.name}
+      aria-expanded={isSelectedMode && isSelected ? true : undefined}
+      aria-hidden={isHiddenInSelectedMode || isRestoringHidden ? true : undefined}
+      className={`group relative flex min-h-11 shrink-0 aspect-[3/2] overflow-hidden border border-sage/25 bg-darker/40 text-left shadow-card-soft outline-none ${transitionClass} ease-[cubic-bezier(0.23,1,0.32,1)] ${interactionClass} focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-sage lg:aspect-[3/4] lg:h-full lg:min-h-11 lg:border ${visibilityClass} ${desktopFlexClass}`}
+      data-gallery-catalog
+      data-gallery-restore-state={
+        isRestoring ? (isReturning ? "anchor" : "pending") : undefined
+      }
+      data-gallery-selected-catalog={isSelectedMode && isSelected ? true : undefined}
+      data-mobile-state={mobileState}
+      onBlur={onBlur}
       onClick={onClick}
-      aria-label={ariaLabel}
-      className={[
-        "absolute top-1/2 -translate-y-1/2 w-11 h-11 rounded-full text-white",
-        "flex items-center justify-center cursor-pointer z-20 transition-[background-color,border-color,transform,opacity] duration-200 ease-out active:scale-95",
-        "lg:bg-darker/80 lg:backdrop-blur-sm lg:border lg:border-sage/50",
-        "lg:hover:bg-copper lg:hover:border-copper lg:hover:scale-110",
-        "lg:shadow-card-soft",
-        side === "left" ? "left-0" : "right-0",
-      ].join(" ")}
+      onFocus={onFocus}
+      onMouseEnter={onMouseEnter}
+      onMouseLeave={onMouseLeave}
+      tabIndex={isHiddenInSelectedMode || isRestoringHidden ? -1 : 0}
+      type="button"
     >
-      {children}
+      {cover ? (
+        <picture className="absolute inset-0">
+          <source media="(max-width: 767px)" srcSet={cover.mobile.src} />
+          <img
+            alt=""
+            className={`h-full w-full object-cover transition-transform duration-500 ease-out ${imageMotionClass}`}
+            draggable={false}
+            loading={index === 0 ? "eager" : "lazy"}
+            src={cover.desktop.src}
+          />
+        </picture>
+      ) : (
+        <span
+          aria-hidden="true"
+          className={`absolute inset-0 bg-gradient-to-br ${getCatalogTone(index)}`}
+        />
+      )}
+
+      <span className={`absolute inset-0 bg-gradient-to-t ${getCatalogTone(index)}`} />
+      <span className="relative flex min-h-[180px] w-full flex-col justify-end gap-5 p-5 text-white lg:min-h-0 lg:p-6">
+        <span className="flex items-center justify-between gap-4">
+          <span
+            className={`font-sans text-2xs uppercase tracking-brand-tight text-sage transition-opacity duration-300 ${
+              isExpanded
+                ? "lg:opacity-100"
+                : "lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-visible:opacity-100"
+            }`}
+          >
+            {catalog.eyebrow}
+          </span>
+          <span className="shrink-0 bg-copper px-3 py-1 font-sans text-2xs uppercase tracking-[0.14em] text-white">
+            {serviceCount}
+          </span>
+        </span>
+        <span className="relative block lg:min-h-[9rem]">
+          <span
+            aria-hidden="true"
+            className={`block font-serif text-3xl leading-tight transition-[opacity,transform] duration-300 md:text-4xl ${
+              isExpanded
+                ? "lg:translate-y-0 lg:opacity-100"
+                : "lg:translate-y-2 lg:opacity-0 lg:group-hover:translate-y-0 lg:group-hover:opacity-100 lg:group-focus-visible:translate-y-0 lg:group-focus-visible:opacity-100"
+            }`}
+            data-gallery-catalog-name-horizontal
+          >
+            {catalog.name}
+          </span>
+          <span
+            aria-hidden="true"
+            className={`pointer-events-none absolute bottom-0 left-1/2 hidden -translate-x-1/2 whitespace-nowrap font-serif text-2xl leading-none text-white transition-[opacity,transform] duration-300 lg:block lg:[writing-mode:vertical-rl] lg:rotate-180 ${
+              isExpanded
+                ? "lg:translate-y-2 lg:opacity-0"
+                : "lg:translate-y-0 lg:opacity-100 lg:group-hover:opacity-0 lg:group-focus-visible:opacity-0"
+            }`}
+            data-gallery-catalog-name-vertical
+          >
+            {catalog.name}
+          </span>
+          <span
+            className={`mt-3 block max-w-sm font-sans text-sm leading-[1.7] text-white/75 opacity-100 transition-opacity duration-300 ${
+              isExpanded
+                ? "lg:opacity-100"
+                : "lg:opacity-0 lg:group-hover:opacity-100 lg:group-focus-visible:opacity-100"
+            }`}
+          >
+            {catalog.description}
+          </span>
+        </span>
+      </span>
     </button>
   );
 }
 
-function SlideOverlay({ slide }: { slide: GallerySlide }) {
+type SelectedCatalogCardProps = {
+  catalog: GalleryCatalog;
+  onClick: () => void;
+};
+
+function SelectedCatalogCard({ catalog, onClick }: SelectedCatalogCardProps) {
+  const cover = getCatalogCover(catalog);
+
   return (
-    <>
-      <div className="absolute left-5 top-5 z-20 bg-dark/90 px-4 py-2 md:left-7 md:top-7">
-        <span className="font-sans text-2xs uppercase tracking-brand-tight text-sage">
-          {slide.label}
+    <button
+      aria-label={`Volver a catalogos desde ${catalog.name}`}
+      className="group relative flex min-h-[220px] overflow-hidden border border-sage/25 bg-darker/40 text-left shadow-card-soft outline-none transition-[filter,transform,border-color] duration-300 hover:-translate-y-0.5 hover:border-sage/60 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-[-4px] focus-visible:outline-sage lg:min-h-full"
+      data-gallery-selected-catalog
+      onClick={onClick}
+      type="button"
+    >
+      {cover ? (
+        <picture className="absolute inset-0">
+          <source media="(max-width: 767px)" srcSet={cover.mobile.src} />
+          <img
+            alt=""
+            className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.025]"
+            draggable={false}
+            src={cover.desktop.src}
+          />
+        </picture>
+      ) : (
+        <span aria-hidden="true" className="absolute inset-0 bg-gradient-to-br from-darker to-dark" />
+      )}
+      <span className="absolute inset-0 bg-gradient-to-t from-darker/92 via-darker/36 to-transparent" />
+      <span className="relative flex w-full flex-col justify-end p-5 text-white lg:p-6">
+        <span className="font-sans text-2xs uppercase tracking-brand-tight text-sage">Catalogo activo</span>
+        <span className="mt-2 font-serif text-3xl leading-tight md:text-4xl">{catalog.name}</span>
+        <span className="mt-4 font-sans text-sm leading-[1.7] text-white/75">
+          Toca esta tarjeta para volver a todos los catalogos.
         </span>
-      </div>
+      </span>
+    </button>
+  );
+}
 
-      <div className="absolute right-5 top-5 z-20 bg-copper px-4 py-2 md:right-7 md:top-7">
-        <span className="font-sans text-2xs uppercase tracking-[0.14em] text-white">
-          {slide.totalImages} casos
+type ServiceCardProps = {
+  service: GalleryService;
+  onClick: () => void;
+};
+
+function ServiceCard({ service, onClick }: ServiceCardProps) {
+  const result = getServiceResult(service);
+  const caseCount = result?.modalImages.length ?? 0;
+
+  return (
+    <button
+      aria-label={
+        caseCount > 0
+          ? `Ver resultados de ${service.title}`
+          : `${service.title}. Sin fotos de casos disponibles`
+      }
+      className="group flex min-h-11 flex-col justify-between border border-sage/20 bg-darker/45 p-5 text-left shadow-card-soft outline-none transition-[border-color,transform,background-color] duration-300 hover:-translate-y-0.5 hover:border-copper/65 hover:bg-darker/70 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sage"
+      data-gallery-service
+      onClick={onClick}
+      type="button"
+    >
+      <span>
+        <span className="block font-serif text-2xl leading-tight text-white">{service.title}</span>
+        <span className="mt-3 block font-sans text-sm leading-[1.7] text-white/70">
+          {service.description}
         </span>
-      </div>
-
-      <div className="absolute inset-x-0 bottom-0 z-10 bg-gradient-to-t from-darker/92 via-darker/36 to-transparent px-5 pb-6 pt-20 text-left md:hidden">
-        <p className="font-serif text-2xl leading-tight text-white md:text-4xl">
-          {slide.procedure}
-        </p>
-        <p className="mt-3 font-sans text-xs uppercase tracking-[0.16em] text-white/70">
-          Tocá para ver todos los casos
-        </p>
-      </div>
-
-      <div className="absolute inset-0 z-10 hidden items-center justify-center bg-darker/68 px-8 opacity-0 transition-opacity duration-300 group-hover:opacity-100 group-focus-visible:opacity-100 md:flex">
-        <div className="text-center">
-          <p className="font-serif text-4xl leading-tight text-white lg:text-5xl">
-            {slide.procedure}
-          </p>
-          <span className="mt-6 inline-flex min-h-11 items-center border border-white/60 px-6 py-3 font-sans text-xs uppercase tracking-[0.16em] text-white transition-[background-color,border-color,color] duration-300 group-hover:border-copper group-hover:bg-copper">
-            Ver {slide.totalImages} resultados →
-          </span>
-        </div>
-      </div>
-    </>
+      </span>
+      <span className="mt-8 flex items-center justify-between gap-4 border-t border-sage/15 pt-4 font-sans text-2xs uppercase tracking-[0.16em]">
+        <span className={caseCount > 0 ? "text-sage" : "text-white/50"}>
+          {caseCount > 0 ? `${caseCount} fotos` : "Sin fotos"}
+        </span>
+        <span className="text-copper transition-transform duration-300 group-hover:translate-x-1">
+          Ver
+        </span>
+      </span>
+    </button>
   );
 }
