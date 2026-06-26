@@ -235,6 +235,30 @@ describe("landing", () => {
     expect(within(container.querySelector("#testimonios") as HTMLElement).queryByText("MA")).not.toBeInTheDocument();
   });
 
+  it("keeps real testimonial excerpts concise while preserving their keywords", () => {
+    const { container } = render(<App />);
+    const texts = Array.from(container.querySelectorAll("#testimonios blockquote")).map(
+      (quote) => quote.textContent ?? ""
+    );
+    const findText = (needle: string) => {
+      const text = texts.find((value) => value.includes(needle));
+      expect(text).toBeTruthy();
+      return text ?? "";
+    };
+
+    const magali = findText("1 MES Y 11 DÍAS");
+    expect([...magali].length).toBeLessThanOrEqual(460);
+    expect(magali).toMatch(/425CC|MUY FELIZ|vida normal|tamaño|masajes|❤️/);
+
+    const ros = findText("30 DÍAS DE OPERADA");
+    expect([...ros].length).toBeLessThanOrEqual(407);
+    expect(ros).toMatch(/mejor recuperación|sin molestias|control salió perfecto|gym|masajes/);
+
+    const molinas = findText("AUMENTO DE MAMAS");
+    expect([...molinas].length).toBeLessThanOrEqual(400);
+    expect(molinas).toMatch(/375cc MENTOR|naturales|feliz|profesionalismo|Dr Dante Masedo/);
+  });
+
   it("renders a responsive carousel with only real result categories", () => {
     const { container } = render(<App />);
     const gallery = container.querySelector("#galeria");
