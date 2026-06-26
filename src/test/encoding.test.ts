@@ -2,6 +2,7 @@ import { readdirSync, readFileSync } from "node:fs";
 import { extname, join } from "node:path";
 import { TextDecoder } from "node:util";
 import { describe, expect, it } from "vitest";
+import { GALLERY_ENTRIES, RESULT_SETS } from "@/lib/results";
 
 const TEXT_EXTENSIONS = new Set([
   ".css",
@@ -56,5 +57,23 @@ describe("source encoding", () => {
     });
 
     expect(failures).toEqual([]);
+  });
+
+  it("keeps visible procedure and gallery texts with Spanish accents", () => {
+    const visibleResultTexts = RESULT_SETS.flatMap((result) => [
+      result.procedure,
+      ...result.galleryImages.map((image) => image.alt),
+      result.galleryMobileImage.alt,
+      ...result.modalImages.map((image) => image.alt),
+    ]);
+    const visibleGalleryTexts = GALLERY_ENTRIES.flatMap((entry) =>
+      entry.type === "placeholder" ? [entry.procedure, entry.alt] : []
+    );
+
+    expect([...visibleResultTexts, ...visibleGalleryTexts]).not.toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(/\bFotografia\b|\bclinica\b|\bLiposuccion\b|\bliposuccion\b|\bmas protesis\b/),
+      ])
+    );
   });
 });

@@ -58,19 +58,19 @@ export const RESULT_SETS: ResultSet[] = [
     modalImages: [
       {
         src: "https://res.cloudinary.com/dz9tuwczf/image/upload/t_optimize/mamoplastia-01_llctwx.png",
-        alt: "Fotografia clinica completa de mamoplastia de aumento caso 1",
+        alt: "Fotografía clínica completa de mamoplastia de aumento caso 1",
       },
       {
         src: "https://res.cloudinary.com/dz9tuwczf/image/upload/t_optimize/mamoplastia-02_lpytrl.png",
-        alt: "Fotografia clinica completa de mamoplastia de aumento caso 2",
+        alt: "Fotografía clínica completa de mamoplastia de aumento caso 2",
       },
       {
         src: "https://res.cloudinary.com/dz9tuwczf/image/upload/t_optimize/mamoplastia-03_xiw2ew.png",
-        alt: "Fotografia clinica completa de mamoplastia de aumento caso 3",
+        alt: "Fotografía clínica completa de mamoplastia de aumento caso 3",
       },
       {
         src: "https://res.cloudinary.com/dz9tuwczf/image/upload/t_optimize/mamoplastia-04_b6sybk.png",
-        alt: "Fotografia clinica completa de mamoplastia de aumento caso 4",
+        alt: "Fotografía clínica completa de mamoplastia de aumento caso 4",
       },
     ],
   },
@@ -100,15 +100,15 @@ export const RESULT_SETS: ResultSet[] = [
     modalImages: [
       {
         src: "https://res.cloudinary.com/dz9tuwczf/image/upload/v1782017837/abdominoplastia-01_fatsey.webp",
-        alt: "Fotografia clinica completa de abdominoplastia caso 1",
+        alt: "Fotografía clínica completa de abdominoplastia caso 1",
       },
       {
         src: "https://res.cloudinary.com/dz9tuwczf/image/upload/v1782017600/abdominoplastia-02_ntjitb.webp",
-        alt: "Fotografia clinica completa de abdominoplastia caso 2",
+        alt: "Fotografía clínica completa de abdominoplastia caso 2",
       },
       {
         src: "https://res.cloudinary.com/dz9tuwczf/image/upload/v1782017360/abdominoplastia-03_sedm61.webp",
-        alt: "Fotografia clinica completa de abdominoplastia caso 3",
+        alt: "Fotografía clínica completa de abdominoplastia caso 3",
       },
     ],
   },
@@ -120,25 +120,25 @@ export const RESULT_SETS: ResultSet[] = [
     galleryImages: [
       {
         src: "https://res.cloudinary.com/dz9tuwczf/image/upload/t_optimize/pex-01_32_xwyfum.png",
-        alt: "Resultado de pexia mas protesis caso 1 por el Dr. Masedo Carlos Dante",
+        alt: "Resultado de pexia más prótesis caso 1 por el Dr. Masedo Carlos Dante",
       },
       {
         src: "https://res.cloudinary.com/dz9tuwczf/image/upload/t_optimize/pex-02_32_bbjzeo.png",
-        alt: "Resultado de pexia mas protesis caso 2 por el Dr. Masedo Carlos Dante",
+        alt: "Resultado de pexia más prótesis caso 2 por el Dr. Masedo Carlos Dante",
       },
     ],
     galleryMobileImage: {
       src: "https://res.cloudinary.com/dz9tuwczf/image/upload/t_mobile/f_auto/q_auto/pex-01_vdffzs.png",
-      alt: "Resultado de pexia mas protesis caso 1 por el Dr. Masedo Carlos Dante",
+      alt: "Resultado de pexia más prótesis caso 1 por el Dr. Masedo Carlos Dante",
     },
     modalImages: [
       {
         src: "https://res.cloudinary.com/dz9tuwczf/image/upload/t_optimize/pex-01_vdffzs.png",
-        alt: "Fotografia clinica completa de pexia mas protesis caso 1",
+        alt: "Fotografía clínica completa de pexia más prótesis caso 1",
       },
       {
         src: "https://res.cloudinary.com/dz9tuwczf/image/upload/t_optimize/pex-02_jnusnh.png",
-        alt: "Fotografia clinica completa de pexia mas protesis caso 2",
+        alt: "Fotografía clínica completa de pexia más prótesis caso 2",
       },
     ],
   },
@@ -162,9 +162,9 @@ export const GALLERY_ENTRIES: GalleryEntry[] = [
     type: "placeholder",
     id: "liposuccion-placeholder",
     label: "CUERPO",
-    procedure: "Liposuccion",
+    procedure: "Liposucción",
     src: PLACEHOLDER_SRC,
-    alt: "Espacio reservado para resultados de liposuccion del Dr. Masedo",
+    alt: "Espacio reservado para resultados de liposucción del Dr. Masedo",
   },
 ];
 
