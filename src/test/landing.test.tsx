@@ -222,6 +222,19 @@ describe("landing", () => {
     expect(footerTopButton.className).toContain("w-11");
   });
 
+  it("keeps mobile testimonial cards content-height and uses a like icon for authors", () => {
+    const { container } = render(<App />);
+
+    const mobileViewport = container.querySelector<HTMLElement>("[data-testimonials-mobile-viewport]");
+    const mobileTrack = container.querySelector<HTMLElement>("#testimonios .lg\\:hidden > div");
+    expect(mobileViewport).toBeInTheDocument();
+    expect(mobileViewport?.style.transitionProperty).toBe("height");
+    expect(mobileTrack?.className).toContain("items-start");
+
+    expect(container.querySelectorAll("#testimonios .lucide-thumbs-up").length).toBeGreaterThan(0);
+    expect(within(container.querySelector("#testimonios") as HTMLElement).queryByText("MA")).not.toBeInTheDocument();
+  });
+
   it("renders a responsive carousel with only real result categories", () => {
     const { container } = render(<App />);
     const gallery = container.querySelector("#galeria");

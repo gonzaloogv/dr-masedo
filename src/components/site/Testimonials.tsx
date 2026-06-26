@@ -1,19 +1,17 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import type { ReactNode, TouchEvent } from "react";
-import { ChevronLeft, ChevronRight, Star } from "lucide-react";
+import { ChevronLeft, ChevronRight, Star, ThumbsUp } from "lucide-react";
 import { Reveal } from "@/components/Reveal";
 
 const TESTIMONIALS = [
-  { id: 1, name: "Valentina M.", age: 32, procedure: "Rinoplastia", initials: "VM", stars: 5,
-    text: "El Dr. Masedo superó todas mis expectativas. Desde la primera consulta sentí una confianza inmediata: explicó todo el procedimiento con paciencia, escuchó mis deseos y el resultado fue absolutamente natural. Recuperé mi autoestima." },
-  { id: 2, name: "Carolina R.", age: 41, procedure: "Lifting Facial", initials: "CR", stars: 5,
-    text: "Después de investigar durante meses, elegí al Dr. Masedo y no me arrepiento. El seguimiento post-operatorio fue impecable y hoy, a un año de la cirugía, me siento diez años más joven. Profesionalismo absoluto." },
-  { id: 3, name: "Lucía A.", age: 28, procedure: "Mamoplastia de Aumento", initials: "LA", stars: 5,
-    text: "Un médico extraordinario que entiende que la cirugía plástica no es vanidad, es bienestar. Los resultados son increíbles, totalmente naturales. Me atendió en todo momento con respeto y seriedad." },
-  { id: 4, name: "Marcela T.", age: 47, procedure: "Abdominoplastia", initials: "MT", stars: 5,
-    text: "Luego de mi pérdida de peso necesitaba esta intervención y el Dr. Masedo fue la elección perfecta. El equipo de clínica es maravilloso, las instalaciones son de primer nivel y el resultado cambió mi vida." },
-  { id: 5, name: "Sofía G.", age: 35, procedure: "Bichectomía", initials: "SG", stars: 5,
-    text: "Desde la consulta inicial hasta la última revisión, el trato fue excelente. El Dr. Masedo tiene una capacidad única para entender qué quiere el paciente y plasmarlo en un resultado bello y equilibrado." },
+  { id: 1, name: "Magali90a", stars: 5,
+    text: "1 MES Y 11 DÍAS. 425CC MUY FELIZ ❤️ Hola chicas, me estaba olvidando de actualizar mi post op. Les cuento que pasaron 1 mes y 11 días, me retiraron los puntos, hago mi vida con total normalidad, no me duele nada y el doctor ya me dejó comenzar el gym,utilizar bici,tomar sol... Estoy MUY contenta con el tamaño y cómo me van quedando, desinflamaron y bajaron de manera rápida con los masajes. P/d: casi no uso corpiños pero me puse uno en para mostrarles en las fotos, es un talle 110 y se me sale un poco el pezón así que quedaron grandes, creo que me hubiese gustado tmb un 450cc pero con este tamaño me siento muy conforme y feliz ❤️, ustedes que opinan?" },
+  { id: 2, name: "RosM", stars: 5,
+    text: "AL FIN LLEGÓ EL DÍA, LA MEJOR DECISIÓN. 30 DÍAS DE OPERADA. VIDA NORMAL! Hola chicas, actualizo mi experiencia hoy cumpliendo 30 días desde mi operación. La verdad es que no puedo pedir mejor recuperación que la que tuve y tengo, ya no hay molestias en absoluto. Hoy fui a retirarme los puntos (una semana después de lo predispuesto, pero no hizo la diferencia) y el control salió perfecto, tengo el alta para empezar el gym, recuperé la movilidad de brazos en un 100%, pero todo debo seguir haciendo con cuidado en cuanto esfuerzos y carga de peso. En 30 días tengo nuevo control para ver el tema cicatriz, pero hoy ya pude ponerme corpiño normal (aunque la comodidad de el del post operatorio y los deportivos es la gloria), debo continuar con masajes todos los días, mucha crema y bueno, a seguir recuperándome." },
+  { id: 3, name: "MolinasAgustina", stars: 5,
+    text: "AUMENTO DE MAMAS, ME OPERÉ EL 13 DE ENERO CONTENTÍSIMO Y FELIZ DE MI POST. Ingresé al sanatorio modelo en resistencia Chaco medio día del 13 de enero. Con ayunas de 18hs Me operé a las 16hs. Para las 18 ya estaba en la sala con mis hermosos pechos ! La cirugía es muy muy estética los puntos de sutura muy controlados... Con la medicación en casa podés estar sin dolores con el reposo necesario y obligatorio sí o sí. Dolores normales musculares de las mamas. A un mes, se han acomodado y con la ayuda de los masajes los pechos se sienten muy normales. Son hermosos. Es un excelente trabajo en mi cuerpo. Me encantan. Son muy naturales Me coloqué 375cc MENTOR. Mido 1.65 es el tamaño exacto para mi torso. Muy feliz y recomiendo siempre las manos la atención y el profesionalismo del Dr Dante Masedo!" },
+  { id: 4, name: "veronicanneme", stars: 5,
+    text: "Lo adoro🙌 excelente profesional, súper detallista y perfeccionista en la armonización del cuerpo ❤️" },
 ];
 
 const AUTOPLAY_MS = 7000;
@@ -66,11 +64,43 @@ export function Testimonials() {
   const touchStartX = useRef<number | null>(null);
   const dragOffset = useRef(0);
   const trackRef = useRef<HTMLDivElement>(null);
+  const mobileCardsRef = useRef<(HTMLElement | null)[]>([]);
+  const [mobileViewportHeight, setMobileViewportHeight] = useState<number | null>(null);
 
   const CARD_W = 65, GAP = 5, OFFSET = 17.5;
   const SLOT = CARD_W + GAP;
   const trackTransform = (idx: number, drag = 0) =>
     `translateX(calc(${OFFSET}vw - ${idx * SLOT}vw + ${drag}px))`;
+
+  useLayoutEffect(() => {
+    const mobileQuery = window.matchMedia?.("(max-width: 1023px)");
+    const activeCard = mobileCardsRef.current[current];
+
+    const updateHeight = () => {
+      if (mobileQuery && !mobileQuery.matches) {
+        setMobileViewportHeight(null);
+        return;
+      }
+
+      const nextHeight = activeCard?.offsetHeight ?? 0;
+      setMobileViewportHeight(nextHeight > 0 ? Math.ceil(nextHeight) : null);
+    };
+
+    updateHeight();
+    window.addEventListener("resize", updateHeight);
+    mobileQuery?.addEventListener?.("change", updateHeight);
+
+    const observer = typeof ResizeObserver !== "undefined" && activeCard
+      ? new ResizeObserver(updateHeight)
+      : null;
+    observer?.observe(activeCard);
+
+    return () => {
+      window.removeEventListener("resize", updateHeight);
+      mobileQuery?.removeEventListener?.("change", updateHeight);
+      observer?.disconnect();
+    };
+  }, [current]);
 
   const handleTouchStart = (e: TouchEvent) => {
     touchStartX.current = e.touches[0].clientX;
@@ -207,13 +237,22 @@ export function Testimonials() {
             })}
           </div>
 
-          <div className="lg:hidden overflow-hidden w-screen -mx-6">
+          <div
+            data-testimonials-mobile-viewport
+            className="lg:hidden overflow-hidden w-screen -mx-6"
+            style={{
+              height: mobileViewportHeight ? `${mobileViewportHeight}px` : undefined,
+              transitionProperty: "height",
+              transitionDuration: reducedMotion ? "0ms" : "220ms",
+              transitionTimingFunction: "ease-out",
+            }}
+          >
             <div
               ref={trackRef}
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
-              className="flex"
+              className="flex items-start"
               style={{
                 gap: `${GAP}vw`,
                 width: `${total * SLOT + OFFSET}vw`,
@@ -227,6 +266,9 @@ export function Testimonials() {
                 return (
                   <article
                     key={t.id}
+                    ref={(node) => {
+                      mobileCardsRef.current[idx] = node;
+                    }}
                     className={[
                       "relative flex-shrink-0 p-7 bg-copper transition-[opacity,transform,border-color,box-shadow] duration-200 overflow-hidden",
                       isActive
@@ -340,17 +382,12 @@ function Author({ t, compact = false }: { t: typeof TESTIMONIALS[number]; compac
             boxShadow: "inset 0 0 0 1px hsl(var(--brand-darker))",
           }}
         >
-          <span className={`font-sans font-semibold text-sage ${compact ? "text-2xs" : "text-xs"}`}>
-            {t.initials}
-          </span>
+          <ThumbsUp aria-hidden="true" size={compact ? 15 : 17} strokeWidth={2} className="text-sage" />
         </div>
       </div>
       <div>
         <p className={`font-sans text-white font-semibold ${compact ? "text-xs" : "text-[0.9rem]"}`}>
           {t.name}
-        </p>
-        <p className={`font-sans text-sage ${compact ? "text-xs" : "text-xs"}`}>
-          {t.procedure} · {t.age} años
         </p>
       </div>
     </div>
